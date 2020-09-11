@@ -83,8 +83,7 @@ namespace OtrsReportApp.Services
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var dynamicFieldsValues = (from fields in db.DynamicFieldValue
                                    where EF.Functions.Like(fields.ObjectId.ToString(), ttId.ToString())
-                                   select fields).Include(field => field.Field).ToList();
-
+                                   select fields).Include(field => field.Field).Where(field => field.Field.Name.Contains("Key")).ToList();
         Dictionary<string, string> configs = new Dictionary<string, string>();
         foreach (var dfv in dynamicFieldsValues)
         {
@@ -97,13 +96,15 @@ namespace OtrsReportApp.Services
           }
         }
         Dictionary<string, string> result = new Dictionary<string, string>();
-        foreach (var dfValue in dynamicFieldsValues)
-        {
-          if (dfValue.ValueText != null)
+        if(configs.Count > 0) {
+          foreach (var dfValue in dynamicFieldsValues)
           {
-            if (configs.ContainsKey(dfValue.ValueText))
-              result.Add(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), configs.First(p => p.Key.Equals(dfValue.ValueText)).Value);
-            else result.Add(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), dfValue.ValueText);
+            if (dfValue.ValueText != null)
+            {
+              if (configs.ContainsKey(dfValue.ValueText))
+                result.Add(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), configs.First(p => p.Key.Equals(dfValue.ValueText)).Value);
+              else result.Add(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), dfValue.ValueText);
+            }
           }
         }
         return result;
@@ -133,9 +134,12 @@ namespace OtrsReportApp.Services
           ticketReportDTO.Client = ticket.CustomerId;
           ticketReportDTO.TicketPriority = ticket.TicketPriority.Name;
           var dFields = GetTTDynamicFields(ticket.Id);
-          foreach (var field in dFields)
+          if(dFields.Count > 0)
           {
-            typeof(TicketReportDTO).GetProperty(field.Key)?.SetValue(ticketReportDTO, field.Value);
+            foreach (var field in dFields)
+            {
+              typeof(TicketReportDTO).GetProperty(field.Key)?.SetValue(ticketReportDTO, field.Value);
+            }
           }
           if (IsTicketDTOValid(ticketReportDTO, filters)) ticketReportDTOs.Add(ticketReportDTO);
         }
@@ -187,11 +191,14 @@ namespace OtrsReportApp.Services
         foreach (var ticket in tickets)
         {
           var dfields = GetTTDynamicFields(ticket.Id);
-          if (dfields.ContainsKey("Zone") && !String.IsNullOrEmpty(dfields["Zone"])) zones.Add(dfields["Zone"]);
-          if (dfields.ContainsKey("Type") && !String.IsNullOrEmpty(dfields["Type"])) types.Add(dfields["Type"]);
-          if (dfields.ContainsKey("Direction") && !String.IsNullOrEmpty(dfields["Direction"])) directions.Add(dfields["Direction"]);
-          if (dfields.ContainsKey("NatInt") && !String.IsNullOrEmpty(dfields["NatInt"])) natInts.Add(dfields["NatInt"]);
-          if (dfields.ContainsKey("Initiator") && !String.IsNullOrEmpty(dfields["Initiator"])) initiators.Add(dfields["Initiator"]);
+          if (dfields.Count > 0)
+          {
+            if (dfields.ContainsKey("Zone") && !String.IsNullOrEmpty(dfields["Zone"])) zones.Add(dfields["Zone"]);
+            if (dfields.ContainsKey("Type") && !String.IsNullOrEmpty(dfields["Type"])) types.Add(dfields["Type"]);
+            if (dfields.ContainsKey("Direction") && !String.IsNullOrEmpty(dfields["Direction"])) directions.Add(dfields["Direction"]);
+            if (dfields.ContainsKey("NatInt") && !String.IsNullOrEmpty(dfields["NatInt"])) natInts.Add(dfields["NatInt"]);
+            if (dfields.ContainsKey("Initiator") && !String.IsNullOrEmpty(dfields["Initiator"])) initiators.Add(dfields["Initiator"]);
+          }
         }
         var filteringItems = new FilteringItems()
         {

@@ -40,7 +40,7 @@ namespace OtrsReportApp
       // In production, the Angular files will be served from this directory
       services.AddSpaStaticFiles(configuration =>
       {
-        configuration.RootPath = "ClientApp/dist";
+        configuration.RootPath = "wwwroot";
       });
     }
 
@@ -62,7 +62,8 @@ namespace OtrsReportApp
       app.UseStaticFiles();
       if (!env.IsDevelopment())
       {
-        app.UseSpaStaticFiles();
+        //app.UseSpaStaticFiles();
+        app.UseDefaultFiles();
       }
 
       app.UseRouting();
