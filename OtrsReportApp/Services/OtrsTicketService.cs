@@ -12,6 +12,7 @@ using ClosedXML.Excel;
 using System.IO;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using AutoMapper.Internal;
 
 namespace OtrsReportApp.Services
 {
@@ -75,6 +76,109 @@ namespace OtrsReportApp.Services
     //    }
     //  }
     //}
+
+    private Dictionary<long, Dictionary<string,string>> GetTTDynamicFieldsBulk(IEnumerable<long> ids)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var dynamicFieldsValues = db.DynamicFieldValue.Where(fields => ids.Contains(fields.ObjectId)).Include(field => field.Field).Where(field => field.Field.Name.Contains("Key")).ToList();
+
+        Dictionary<long, Dictionary<string, string>> ttsDynamicFields = new Dictionary<long, Dictionary<string, string>>();
+        foreach (var id in ids)
+        {
+          var ttDynamicFields = dynamicFieldsValues.FindAll(field => field.ObjectId == id);
+          Dictionary<string, string> configs = new Dictionary<string, string>();
+          foreach (var dfv in ttDynamicFields)
+          {
+            var config = Encoding.UTF8.GetString(dfv.Field.Config, 0, dfv.Field.Config.Length).Split("\n").ToList().FindAll(value => value.Contains("Key")).ToList();
+            foreach (var item in config)
+            {
+              var res = item.Split(":");
+              if (res.Length > 1 && res[0].Contains("Key"))
+                configs.TryAdd(res[0].Trim(), res[1].TrimStart());
+            }
+          }
+          Dictionary<string, string> result = new Dictionary<string, string>();
+          if (configs.Count > 0)
+          {
+            foreach (var dfValue in ttDynamicFields)
+            {
+              if (dfValue.ValueText != null)
+              {
+                if (configs.ContainsKey(dfValue.ValueText))
+                  result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), configs.First(p => p.Key.Equals(dfValue.ValueText)).Value);
+                else result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), dfValue.ValueText);
+              }
+            }
+          }
+          ttsDynamicFields.Add(id, result);
+        }
+        return ttsDynamicFields;
+      }
+    }
+
+
+    public Report GetFilteredTicketsReportBulk(Filters filters)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        List<TicketReportDTO> ticketReportDTOs = new List<TicketReportDTO>();
+        var tickets = (from ticket in db.Ticket
+                       where ticket.CreateTime.CompareTo(filters.Period.startTime) > 0
+                       && ticket.CreateTime.CompareTo(filters.Period.endTime) < 0
+                       select ticket)
+                      .Include(ticket => ticket.TicketState)
+                      .Include(ticket => ticket.Queue)
+                      .Include(ticket => ticket.TicketPriority)
+                      .ToList();
+
+        var ttsDynamicFields = GetTTDynamicFieldsBulk((from ticket in tickets select ticket.Id).ToList());
+
+        FilteringItems filteringItems = new FilteringItems();
+
+        var zones = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Zone").Distinct().ToList();
+        var types = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Type").Distinct().ToList();
+        var direction = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Direction").Distinct().ToList();
+        var natInt = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("NatInt").Distinct().ToList();
+        var initiator = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Initiator").Distinct().ToList();
+
+        filteringItems.States = tickets.Select(ticket => ticket.TicketState.Name).Distinct().OrderByDescending(state => state).toSelectItems();
+        filteringItems.TicketPriorities = tickets.Select(ticket => ticket.TicketPriority.Name).Distinct().OrderByDescending(ticketPriority => ticketPriority).toSelectItems();
+        filteringItems.Zones = zones.Count > 0 ? zones.toSelectItems() : null;
+        filteringItems.Types = types.Count > 0 ? types.toSelectItems() : null;
+        filteringItems.Directions = direction.Count > 0 ? direction.toSelectItems() : null;
+        filteringItems.NatInts = natInt.Count > 0 ? natInt.toSelectItems() : null;
+        filteringItems.Initiators = initiator.Count > 0 ? initiator.toSelectItems() : null;
+
+        foreach (var ticket in tickets)
+        {
+          TicketReportDTO ticketReportDTO = new TicketReportDTO();
+          ticketReportDTO.TN = ticket.Tn;
+          ticketReportDTO.State = ticket.TicketState.Name;
+          ticketReportDTO.CreateTime = ticket.CreateTime;
+          ticketReportDTO.Client = ticket.CustomerId;
+          ticketReportDTO.TicketPriority = ticket.TicketPriority.Name;
+          var dFields = ttsDynamicFields[ticket.Id];
+          if (dFields.Count > 0)
+          {
+            foreach (var field in dFields)
+            {
+              typeof(TicketReportDTO).GetProperty(field.Key)?.SetValue(ticketReportDTO, field.Value);
+            }
+          }
+          if (IsTicketDTOValid(ticketReportDTO, filters)) ticketReportDTOs.Add(ticketReportDTO);
+        }
+
+        return new Report()
+        {
+          ticketReportDTOs = ticketReportDTOs.OrderByDescending(ticket => ticket.CreateTime),
+          filteringItems = filteringItems
+        };
+        
+      }
+    }
 
     private Dictionary<string, string> GetTTDynamicFields(long ttId)
     {
@@ -263,7 +367,7 @@ namespace OtrsReportApp.Services
     }
 
     public FileStreamResult DownloadReport(Filters filters) {
-      var report = GetFilteredTicketsReport(filters);
+      var report = GetFilteredTicketsReportBulk(filters).ticketReportDTOs;
       using (var workbook = new XLWorkbook())
       {
         var worksheet = workbook.AddWorksheet("TTReport");

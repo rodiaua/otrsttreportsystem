@@ -35,6 +35,14 @@ namespace OtrsReportApp.Controllers
 
 
     [HttpPost("[action]")]
+    public Report GetFilteredTicketsReportBulk([FromBody] Filters filters)
+    {
+      return _otrsServcie.GetFilteredTicketsReportBulk(filters);
+    }
+
+    
+
+    [HttpPost("[action]")]
     public IEnumerable<TicketReportDTO> GetFilteredTicketsReport([FromBody] Filters filters)
     {
       return _otrsServcie.GetFilteredTicketsReport(filters);

@@ -15,5 +15,19 @@ namespace OtrsReportApp.Extensions
         yield return new SelectItem() { Label = item, Value = item };
       }
     }
+
+    public static IEnumerable<string> SelectValues(this IEnumerable<Dictionary<string, string>> collection, string key)
+    {
+      foreach(var item in collection)
+      {
+        foreach(var dict in item)
+        {
+          if(dict.Key == key)
+          {
+            yield return dict.Value;
+          }
+        }
+      }
+    }
   }
 }

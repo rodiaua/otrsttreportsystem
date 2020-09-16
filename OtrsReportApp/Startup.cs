@@ -32,7 +32,7 @@ namespace OtrsReportApp
       });
       services.AddSingleton(cfg.CreateMapper());
       services.AddDbContext<ApplicationDbContext>(options =>
-      options.UseMySql(Configuration.GetConnectionString("TestOtrs")));
+      options.UseMySql(Configuration.GetConnectionString("TestOtrs")).EnableSensitiveDataLogging());
       services.AddControllers()
         .AddNewtonsoftJson();
 

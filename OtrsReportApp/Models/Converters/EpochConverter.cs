@@ -32,7 +32,7 @@ namespace OtrsReportApp.Models.Converters
         default:
           return null;
       }
-      return _epoch.AddSeconds(epochTime);
+      return _epoch.AddSeconds(epochTime).ToLocalTime();
     }
 
     public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
