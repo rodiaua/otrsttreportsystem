@@ -9,7 +9,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using AutoMapper;
-
+using OtrsReportApp.Data;
+using OtrsReportApp.Models.Account;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Text;
+using System.Diagnostics.SymbolStore;
+using Microsoft.IdentityModel.Tokens;
+using System;
 
 namespace OtrsReportApp
 {
@@ -25,14 +32,34 @@ namespace OtrsReportApp
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
-      
+      //Inject AppSettings
+      services.Configure<ApplicationSettings>(Configuration.GetSection("ApplicationSettings"));
+
+
       var cfg = new MapperConfiguration(mc =>
       {
         mc.AddProfile(new MappingProfile());
       });
       services.AddSingleton(cfg.CreateMapper());
+
       services.AddDbContext<ApplicationDbContext>(options =>
-      options.UseMySql(Configuration.GetConnectionString("TestOtrs")).EnableSensitiveDataLogging());
+      options.UseMySql(Configuration.GetConnectionString("TestOtrs")));
+
+      services.AddDbContext<AccountDbContext>(options =>
+      options.UseMySql(Configuration.GetConnectionString("ReportSystemAccounts")), ServiceLifetime.Scoped);
+
+      services.AddIdentity<AccountUser, AccountRole>().
+        AddEntityFrameworkStores<AccountDbContext>();
+
+      services.Configure<IdentityOptions>(options =>
+      {
+        options.Password.RequiredLength = 6;
+        options.Password.RequireDigit = false;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireUppercase = false;
+      }
+      );
+
       services.AddControllers()
         .AddNewtonsoftJson();
 
@@ -41,6 +68,28 @@ namespace OtrsReportApp
       services.AddSpaStaticFiles(configuration =>
       {
         configuration.RootPath = "wwwroot";
+      });
+
+      //Jwt Auth
+
+      var key = Encoding.UTF8.GetBytes(Configuration["ApplicationSettings:JWTSecret"].ToString());
+
+      services.AddAuthentication(x =>
+      {
+        x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+      }).AddJwtBearer(x => {
+        x.RequireHttpsMetadata = false;
+        x.SaveToken = false;
+        x.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+          ValidateIssuerSigningKey = true,
+          IssuerSigningKey = new SymmetricSecurityKey(key),
+          ValidateIssuer = false,
+          ValidateAudience = false,
+          ClockSkew = TimeSpan.Zero
+        };
       });
     }
 
@@ -59,15 +108,18 @@ namespace OtrsReportApp
       }
 
       app.UseHttpsRedirection();
-      app.UseStaticFiles();
+      //app.UseStaticFiles();
       if (!env.IsDevelopment())
       {
+        app.UseFileServer();
+        //app.UseDefaultFiles();
         //app.UseSpaStaticFiles();
-        app.UseDefaultFiles();
+        //app.UseStaticFiles();
       }
 
       app.UseRouting();
-
+      app.UseAuthentication();
+      app.UseAuthorization();
       app.UseEndpoints(endpoints =>
       {
         endpoints.MapControllerRoute(

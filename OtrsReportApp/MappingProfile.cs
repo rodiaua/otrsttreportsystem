@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using OtrsReportApp.Models;
+using OtrsReportApp.Models.Account;
 using OtrsReportApp.Models.DTO;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,10 @@ namespace OtrsReportApp
       CreateMap<Ticket, TicketDTO>();
       CreateMap<Queue, QueueDTO>();
       CreateMap<TicketState, TicketStateDTO>();
+      CreateMap<RegistrationUserModel, AccountUser>()
+        .ForMember("UserName", opt => opt.MapFrom(src => src.Email));
+      CreateMap<AccountUser, UserTableModel>();
+      
     }
   }
 }
