@@ -9,7 +9,6 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Owin;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
@@ -140,6 +139,7 @@ namespace OtrsReportApp.Controllers
       }
     }
 
+    
 
     [HttpPost("[action]")]
     public async Task<IActionResult> Login([FromBody] LoginUserModel model)
@@ -158,7 +158,7 @@ namespace OtrsReportApp.Controllers
             new Claim(_options.ClaimsIdentity.RoleClaimType, roles.FirstOrDefault())
           }),
           Expires = DateTime.UtcNow.AddHours(12),
-          SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_appSettings.JWTSecret)), SecurityAlgorithms.HmacSha256Signature)
+          SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes("Gj3du91iGAl34bnd90Dv3BNhdakh3Hha6chV")), SecurityAlgorithms.HmacSha256Signature)
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();

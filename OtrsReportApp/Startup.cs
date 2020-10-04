@@ -17,6 +17,8 @@ using System.Text;
 using System.Diagnostics.SymbolStore;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using OtrsReportApp.Configuration;
+using OtrsReportApp.Controllers;
 
 namespace OtrsReportApp
 {
@@ -33,7 +35,7 @@ namespace OtrsReportApp
     public void ConfigureServices(IServiceCollection services)
     {
       //Inject AppSettings
-      services.Configure<ApplicationSettings>(Configuration.GetSection("ApplicationSettings"));
+      //services.Configure<ApplicationSettings>(Configuration.GetSection("ApplicationSettings"));
 
 
       var cfg = new MapperConfiguration(mc =>
@@ -46,7 +48,10 @@ namespace OtrsReportApp
       options.UseMySql(Configuration.GetConnectionString("TestOtrs")));
 
       services.AddDbContext<AccountDbContext>(options =>
-      options.UseMySql(Configuration.GetConnectionString("ReportSystemAccounts")), ServiceLifetime.Scoped);
+      {
+        options.UseMySql(Configuration.GetConnectionString("ReportSystemAccounts"));
+      }
+      , ServiceLifetime.Scoped);
 
       services.AddIdentity<AccountUser, AccountRole>().
         AddEntityFrameworkStores<AccountDbContext>();
@@ -60,6 +65,7 @@ namespace OtrsReportApp
       }
       );
 
+      services.AddScoped<UserService>();
       services.AddControllers()
         .AddNewtonsoftJson();
 
@@ -72,7 +78,11 @@ namespace OtrsReportApp
 
       //Jwt Auth
 
-      var key = Encoding.UTF8.GetBytes(Configuration["ApplicationSettings:JWTSecret"].ToString());
+      var appSettingsSection = Configuration.GetSection("ApplicationSettings");
+      services.Configure<AuthSettings>(appSettingsSection);
+      var appSettings = appSettingsSection.Get<AuthSettings>();
+      var key = Encoding.UTF8.GetBytes(appSettings.JWTSecret);
+      //var key = Encoding.UTF8.GetBytes("Gj3du91iGAl34bnd90Dv3BNhdakh3Hha6chV");
 
       services.AddAuthentication(x =>
       {
@@ -107,14 +117,14 @@ namespace OtrsReportApp
         app.UseHsts();
       }
 
-      app.UseHttpsRedirection();
+      //app.UseHttpsRedirection();
       //app.UseStaticFiles();
       if (!env.IsDevelopment())
       {
-        app.UseFileServer();
+        //app.UseFileServer();
         //app.UseDefaultFiles();
         //app.UseSpaStaticFiles();
-        //app.UseStaticFiles();
+        app.UseStaticFiles();
       }
 
       app.UseRouting();
@@ -138,6 +148,14 @@ namespace OtrsReportApp
           spa.UseProxyToSpaDevelopmentServer("http://localhost:4200");
         }
       });
+
+      var provider = app.ApplicationServices;
+      using (var scope = provider.CreateScope())
+      {
+        var userService = scope.ServiceProvider.GetRequiredService<UserService>();
+        userService.InitDb().GetAwaiter().GetResult();
+      }
+      }
     }
   }
-}
+

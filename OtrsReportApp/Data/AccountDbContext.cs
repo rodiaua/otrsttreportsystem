@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using OtrsReportApp.Models.Account;
 using System;
@@ -16,6 +17,20 @@ namespace OtrsReportApp.Data
 
     }
 
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+      base.OnModelCreating(builder);
 
+      builder.Entity<AccountUser>(b =>
+      {
+        b.ToTable("aspnetusers");
+      });
+      builder.Entity<AccountRole>(b =>
+      {
+        b.ToTable("aspnetroles");
+      });
+      builder.Entity<IdentityUserRole<string>>()
+        .ToTable("aspnetuserroles");
+    }
   }
 }
