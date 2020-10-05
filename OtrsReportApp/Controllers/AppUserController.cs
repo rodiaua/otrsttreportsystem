@@ -18,6 +18,7 @@ using OtrsReportApp.Models;
 using OtrsReportApp.Models.Account;
 using System.Transactions;
 using OtrsReportApp.Data;
+using Microsoft.Extensions.Configuration;
 
 namespace OtrsReportApp.Controllers
 {
@@ -31,9 +32,10 @@ namespace OtrsReportApp.Controllers
     private IMapper _mapper;
     private readonly ApplicationSettings _appSettings;
     private readonly AccountDbContext _accountDbContext;
+    private readonly IConfiguration _config;
 
     public AppUserController(UserManager<AccountUser> userManager, SignInManager<AccountUser> signInManager,
-      IMapper mapper, IOptions<ApplicationSettings> applicationSetting, RoleManager<AccountRole> roleManager, AccountDbContext accountDbContext)
+      IMapper mapper, IOptions<ApplicationSettings> applicationSetting, RoleManager<AccountRole> roleManager, AccountDbContext accountDbContext, IConfiguration config)
     {
       _userManager = userManager;
       _signInManager = signInManager;
@@ -41,6 +43,7 @@ namespace OtrsReportApp.Controllers
       _appSettings = applicationSetting.Value;
       _roleManager = roleManager;
       _accountDbContext = accountDbContext;
+      _config = config;
     }
 
     [HttpGet("[action]")]
@@ -158,7 +161,7 @@ namespace OtrsReportApp.Controllers
             new Claim(_options.ClaimsIdentity.RoleClaimType, roles.FirstOrDefault())
           }),
           Expires = DateTime.UtcNow.AddHours(12),
-          SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes("Gj3du91iGAl34bnd90Dv3BNhdakh3Hha6chV")), SecurityAlgorithms.HmacSha256Signature)
+          SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetValue<string>("ApplicationSettings:JWTSecret"))), SecurityAlgorithms.HmacSha256Signature)
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();

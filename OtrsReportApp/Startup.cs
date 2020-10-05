@@ -82,7 +82,6 @@ namespace OtrsReportApp
       services.Configure<AuthSettings>(appSettingsSection);
       var appSettings = appSettingsSection.Get<AuthSettings>();
       var key = Encoding.UTF8.GetBytes(appSettings.JWTSecret);
-      //var key = Encoding.UTF8.GetBytes("Gj3du91iGAl34bnd90Dv3BNhdakh3Hha6chV");
 
       services.AddAuthentication(x =>
       {
