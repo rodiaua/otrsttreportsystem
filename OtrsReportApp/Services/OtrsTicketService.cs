@@ -27,55 +27,6 @@ namespace OtrsReportApp.Services
       _mapper = mapper;
     }
 
-    //public IEnumerable<Ticket> GetTicketsForPeriod(Period period)
-    //{
-    //  using (var scope = _scopeFactory.CreateScope())
-    //  {
-    //    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    //    var result = (from ticket in db.Ticket
-    //                  where ticket.CreateTime.CompareTo(period.startTime) > 0
-    //                  && ticket.CreateTime.CompareTo(period.endTime) < 0
-    //                  select ticket)
-    //                  .Include(ticket => ticket.TicketState)
-    //                  .Include(ticket => ticket.Queue)
-    //                  .ToList();
-
-    //    return result;
-    //  }
-
-    //}
-
-    //private IEnumerable<string> RetreiveTTDynamicFields(long ttId)
-    //{
-    //  using(var scope = _scopeFactory.CreateScope())
-    //  {
-    //    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    //    var dynamicFieldsValues = (from fields in db.DynamicFieldValue
-    //                               where EF.Functions.Like(fields.ObjectId.ToString(), ttId.ToString())
-    //                               select fields).Include(field => field.Field).ToList();
-
-    //    Dictionary<string, string> configs = new Dictionary<string, string>();
-    //    foreach (var dfv in dynamicFieldsValues)
-    //    {
-    //      var config = Encoding.UTF8.GetString(dfv.Field.Config, 0, dfv.Field.Config.Length).Split("\n");
-    //      foreach (var item in config)
-    //      {
-    //        var res = item.Split(":");
-    //        if (res.Length > 1)
-    //          configs.TryAdd(res[0].Trim(), res[1].TrimStart());
-    //      }
-    //    }
-    //    foreach (var dfValue in dynamicFieldsValues)
-    //    {
-    //      if (dfValue.ValueText != null)
-    //      {
-    //        if (configs.ContainsKey(dfValue.ValueText))
-    //          yield return configs.First(p => p.Key.Equals(dfValue.ValueText)).Value;
-    //        else yield return dfValue.ValueText;
-    //      }
-    //    }
-    //  }
-    //}
 
     private Dictionary<long, Dictionary<string,string>> GetTTDynamicFieldsBulk(IEnumerable<long> ids)
     {
@@ -132,7 +83,7 @@ namespace OtrsReportApp.Services
                       .Include(ticket => ticket.TicketState)
                       .Include(ticket => ticket.Queue)
                       .Include(ticket => ticket.TicketPriority)
-                      .ToList();
+                      .ToList().Where(t => !t.Queue.Name.Equals("Trash"));
 
         var ttsDynamicFields = GetTTDynamicFieldsBulk((from ticket in tickets select ticket.Id).ToList());
 

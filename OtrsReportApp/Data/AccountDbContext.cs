@@ -17,6 +17,8 @@ namespace OtrsReportApp.Data
 
     }
 
+    public DbSet<OtpCode> OtpCodes { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
       base.OnModelCreating(builder);
@@ -31,6 +33,14 @@ namespace OtrsReportApp.Data
       });
       builder.Entity<IdentityUserRole<string>>()
         .ToTable("aspnetuserroles");
+      builder.Entity<OtpCode>(m =>
+      {
+        m.ToTable("otpcodes");
+        m.HasKey(r => r.Id);
+        m.Property(r => r.UserId).IsRequired();
+        m.Property(r => r.Code).IsRequired();
+        m.Property(r => r.Expires).IsRequired();
+      });
     }
   }
 }

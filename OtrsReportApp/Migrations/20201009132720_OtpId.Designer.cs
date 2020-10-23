@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OtrsReportApp.Data;
 
 namespace OtrsReportApp.Migrations
 {
     [DbContext(typeof(AccountDbContext))]
-    partial class AccountDbContextModelSnapshot : ModelSnapshot
+    [Migration("20201009132720_OtpId")]
+    partial class OtpId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -215,18 +217,17 @@ namespace OtrsReportApp.Migrations
                     b.ToTable("aspnetusers");
                 });
 
-            modelBuilder.Entity("OtrsReportApp.Models.Account.OtpCode", b =>
+            modelBuilder.Entity("OtrsReportApp.Models.Account.OtpCodes", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("longtext CHARACTER SET utf8mb4");
-
                     b.Property<DateTime>("Expires")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<int>("OtpCode")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserId")
                         .IsRequired()

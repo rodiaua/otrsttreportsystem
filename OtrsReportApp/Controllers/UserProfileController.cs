@@ -43,6 +43,7 @@ namespace OtrsReportApp.Controllers
     [Authorize(Roles = "Admin,User")]
     public async Task<IActionResult> UpdateProfile([FromBody]UpdateUserModel model)
     {
+      var claims = User.Claims.ToList();
       var userId = User.Claims.First(c => c.Type.Equals("userId")).Value;
       var user = await _userManager.FindByIdAsync(userId);
       user.Email = model.Email;

@@ -19,6 +19,7 @@ using OtrsReportApp.Models.Account;
 using System.Transactions;
 using OtrsReportApp.Data;
 using Microsoft.Extensions.Configuration;
+using OtrsReportApp.Services;
 
 namespace OtrsReportApp.Controllers
 {
@@ -33,9 +34,10 @@ namespace OtrsReportApp.Controllers
     private readonly ApplicationSettings _appSettings;
     private readonly AccountDbContext _accountDbContext;
     private readonly IConfiguration _config;
+    private readonly TwoFAService _twoFAService;
 
     public AppUserController(UserManager<AccountUser> userManager, SignInManager<AccountUser> signInManager,
-      IMapper mapper, IOptions<ApplicationSettings> applicationSetting, RoleManager<AccountRole> roleManager, AccountDbContext accountDbContext, IConfiguration config)
+      IMapper mapper, IOptions<ApplicationSettings> applicationSetting, RoleManager<AccountRole> roleManager, AccountDbContext accountDbContext, IConfiguration config, TwoFAService twoFAService)
     {
       _userManager = userManager;
       _signInManager = signInManager;
@@ -44,6 +46,7 @@ namespace OtrsReportApp.Controllers
       _roleManager = roleManager;
       _accountDbContext = accountDbContext;
       _config = config;
+      _twoFAService = twoFAService;
     }
 
     [HttpGet("[action]")]
@@ -81,7 +84,8 @@ namespace OtrsReportApp.Controllers
 
         return Ok(result);
 
-      }catch(Exception ex)
+      }
+      catch (Exception ex)
       {
         throw ex;
       }
@@ -141,8 +145,43 @@ namespace OtrsReportApp.Controllers
         throw ex;
       }
     }
+    [HttpGet("[action]/{otpCode}")]
+    [Authorize]
+    public async Task<IActionResult> ConfirmOtp(string otpCode)
+    {
+      var claims = User.Claims.ToList();
+      var otpId = User.Claims.First(c => c.Type.Equals("otpId")).Value;
+      var userId = User.Claims.First(c => c.Type.Equals("userId")).Value;
+      var user = await _userManager.FindByIdAsync(userId);
+      if (otpId != null && userId != null)
+      {
+        var result = await _twoFAService.ConfirmOtp(user, Convert.ToInt32(otpId), otpCode);
+        if (result.Succeeded)
+        {
+          var roles = await _userManager.GetRolesAsync(user);
+          IdentityOptions _options = new IdentityOptions();
+          var tokenDescriptor = new SecurityTokenDescriptor()
+          {
+            Subject = new ClaimsIdentity(new Claim[]
+            {
+                    new Claim("userId", user.Id.ToString()),
+                    new Claim(_options.ClaimsIdentity.RoleClaimType, roles.FirstOrDefault())
+            }),
+            Expires = DateTime.UtcNow.AddHours(12),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetValue<string>("ApplicationSettings:JWTSecret"))), SecurityAlgorithms.HmacSha256Signature)
+          };
 
-    
+          var tokenHandler = new JwtSecurityTokenHandler();
+          var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+          var token = tokenHandler.WriteToken(securityToken);
+          result.Token = token;
+          return Ok(result);
+        }
+        return Ok(result);
+      }
+      return Ok("Fail");
+
+    }
 
     [HttpPost("[action]")]
     public async Task<IActionResult> Login([FromBody] LoginUserModel model)
@@ -150,27 +189,71 @@ namespace OtrsReportApp.Controllers
       var user = await _userManager.FindByNameAsync(model.UserName);
       if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
       {
+        var otpCode = await _twoFAService.GenerateCodeForeUser(user);
         //get the role assighned to the user
         var roles = await _userManager.GetRolesAsync(user);
         IdentityOptions _options = new IdentityOptions();
-        var tokenDescriptor = new SecurityTokenDescriptor()
+
+        SecurityTokenDescriptor tokenDescriptor = null;
+        tokenDescriptor = new SecurityTokenDescriptor()
         {
           Subject = new ClaimsIdentity(new Claim[]
-          {
+        {
             new Claim("userId", user.Id.ToString()),
-            new Claim(_options.ClaimsIdentity.RoleClaimType, roles.FirstOrDefault())
-          }),
-          Expires = DateTime.UtcNow.AddHours(12),
+            new Claim("otpId", otpCode.Id.ToString())
+        }),
+          Expires = DateTime.UtcNow.AddMinutes(3),
           SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetValue<string>("ApplicationSettings:JWTSecret"))), SecurityAlgorithms.HmacSha256Signature)
         };
 
+
         var tokenHandler = new JwtSecurityTokenHandler();
         var securityToken = tokenHandler.CreateToken(tokenDescriptor);
-        var token = tokenHandler.WriteToken(securityToken);
-        return Ok(new { token });
+        var otpToken = tokenHandler.WriteToken(securityToken);
+        return Ok(new { otpToken });
       }
       return BadRequest(new { message = "Username or password is incorrect." });
     }
+
+    [HttpGet("[action]")]
+    [Authorize]
+    public async Task RemoveOtps()
+    {
+      var otpId = User.Claims.FirstOrDefault(c => c.Type.Equals("otpId"))?.Value;
+      if(otpId != null)
+      {
+        await _twoFAService.RemoveOtp(Convert.ToInt32(otpId));
+      }
+    }
+
+
+    //[HttpPost("[action]")]
+    //public async Task<IActionResult> Login([FromBody] LoginUserModel model)
+    //{
+    //  var user = await _userManager.FindByNameAsync(model.UserName);
+    //  if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+    //  {
+    //    //get the role assighned to the user
+    //    var roles = await _userManager.GetRolesAsync(user);
+    //    IdentityOptions _options = new IdentityOptions();
+    //    var tokenDescriptor = new SecurityTokenDescriptor()
+    //    {
+    //      Subject = new ClaimsIdentity(new Claim[]
+    //      {
+    //        new Claim("userId", user.Id.ToString()),
+    //        new Claim(_options.ClaimsIdentity.RoleClaimType, roles.FirstOrDefault())
+    //      }),
+    //      Expires = DateTime.UtcNow.AddHours(12),
+    //      SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetValue<string>("ApplicationSettings:JWTSecret"))), SecurityAlgorithms.HmacSha256Signature)
+    //    };
+
+    //    var tokenHandler = new JwtSecurityTokenHandler();
+    //    var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+    //    var token = tokenHandler.WriteToken(securityToken);
+    //    return Ok(new { token });
+    //  }
+    //  return BadRequest(new { message = "Username or password is incorrect." });
+    //}
 
 
   }

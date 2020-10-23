@@ -19,6 +19,7 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using OtrsReportApp.Configuration;
 using OtrsReportApp.Controllers;
+using OtrsReportApp.Services.EmailService;
 
 namespace OtrsReportApp
 {
@@ -62,10 +63,15 @@ namespace OtrsReportApp
         options.Password.RequireDigit = false;
         options.Password.RequireNonAlphanumeric = false;
         options.Password.RequireUppercase = false;
+        //added
+        options.Lockout.MaxFailedAccessAttempts = 10;
+        options.Lockout.DefaultLockoutTimeSpan=TimeSpan.FromMinutes(10);
       }
       );
 
       services.AddScoped<UserService>();
+      services.AddScoped<TwoFAService>();
+      services.AddScoped<IEmailService, WindowsEmailService>();
       services.AddControllers()
         .AddNewtonsoftJson();
 
