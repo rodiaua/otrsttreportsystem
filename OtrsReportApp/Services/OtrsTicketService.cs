@@ -33,7 +33,8 @@ namespace OtrsReportApp.Services
       using (var scope = _scopeFactory.CreateScope())
       {
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var dynamicFieldsValues = db.DynamicFieldValue.Where(fields => ids.Contains(fields.ObjectId)).Include(field => field.Field).Where(field => field.Field.Name.Contains("Key")).ToList();
+        var dynamicFieldsValues = db.DynamicFieldValue.Where(fields => ids.Contains(fields.ObjectId)).Include(field => field.Field).Where(field => field.Field.Name.Contains("Key") ||
+        field.Field.Name.Equals("TicketFreeTime1")).ToList();
 
         Dictionary<long, Dictionary<string, string>> ttsDynamicFields = new Dictionary<long, Dictionary<string, string>>();
         foreach (var id in ids)
@@ -60,6 +61,9 @@ namespace OtrsReportApp.Services
                 if (configs.ContainsKey(dfValue.ValueText))
                   result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), configs.First(p => p.Key.Equals(dfValue.ValueText)).Value);
                 else result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), dfValue.ValueText);
+              }else if(dfValue.ValueDate != null)
+              {
+                result.TryAdd("CloseTime", dfValue.ValueDate.ToString());
               }
             }
           }
@@ -116,7 +120,7 @@ namespace OtrsReportApp.Services
           {
             foreach (var field in dFields)
             {
-              typeof(TicketReportDTO).GetProperty(field.Key)?.SetValue(ticketReportDTO, field.Value);
+              typeof(TicketReportDTO).GetProperty(field.Key)?.SetValue(ticketReportDTO, !field.Key.Equals("CloseTime") ? field.Value: DateTime.Parse(field.Value));
             }
           }
           if (IsTicketDTOValid(ticketReportDTO, filters)) ticketReportDTOs.Add(ticketReportDTO);
@@ -334,9 +338,10 @@ namespace OtrsReportApp.Services
         worksheet.Cell(currentRow, 9).Value = "National/International";
         worksheet.Cell(currentRow, 10).Value = "Priority";
         worksheet.Cell(currentRow, 11).Value = "State";
+        worksheet.Cell(currentRow, 12).Value = "Close Time";
 
 
-        foreach(var item in report)
+        foreach (var item in report)
         {
           currentRow++;
           worksheet.Cell(currentRow, 1).DataType = XLDataType.Number;
@@ -351,6 +356,7 @@ namespace OtrsReportApp.Services
           worksheet.Cell(currentRow, 9).Value = item.NatInt;
           worksheet.Cell(currentRow, 10).Value = item.TicketPriority;
           worksheet.Cell(currentRow, 11).Value = item.State;
+          worksheet.Cell(currentRow, 12).Value = item.CloseTime;
         }
 
 

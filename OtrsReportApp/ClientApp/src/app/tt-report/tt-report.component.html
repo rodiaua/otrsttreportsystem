@@ -36,6 +36,7 @@
             <th>National/ <br> International</th>
             <th>Priority</th>
             <th>State</th>
+            <th>Close Time</th>
         </tr>
         <tr>
             <th>
@@ -91,6 +92,8 @@
                     </ng-template>
                 </p-multiSelect>
             </th>
+            <th>
+            </th>
         </tr>
     </ng-template>
     <ng-template pTemplate="body" let-rowData>
@@ -106,7 +109,10 @@
             <td>{{rowData.natInt}}</td>
             <td> {{rowData.ticketPriority}}</td>
             <td>{{rowData.state}}</td>
+            <td>{{epochToString(rowData.closeTime)}}</td>
         </tr>
     </ng-template>
 </p-table>
-<i *ngIf="loadingData"  class="pi pi-spin pi-spinner" style="margin-left: 50%; margin-top: 30px; font-size: 100px;"></i>
+<div class="container-fluid" *ngIf="loadingData" style="text-align: center;">
+    <i class="pi pi-spin pi-spinner" style="font-size: 5rem"></i>
+</div>

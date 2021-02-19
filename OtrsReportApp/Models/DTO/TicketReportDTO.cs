@@ -21,5 +21,7 @@ namespace OtrsReportApp.Models.DTO
     public string State { get; set; }
     public string Initiator { get; set; }
     public string TicketPriority { get; set; }
+    [JsonConverter(typeof(EpochConverter))]
+    public DateTime? CloseTime { get; set; }
   }
 }
