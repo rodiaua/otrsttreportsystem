@@ -130,6 +130,9 @@ namespace OtrsReportApp
         //app.UseDefaultFiles();
         //app.UseSpaStaticFiles();
         app.UseStaticFiles();
+
+
+
       }
 
       app.UseRouting();
