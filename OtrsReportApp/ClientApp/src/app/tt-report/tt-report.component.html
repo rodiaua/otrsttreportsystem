@@ -1,0 +1,112 @@
+<p-toast></p-toast>
+<div class="p-field p-col-12 p-md-4">
+    <label for="buttonbar" style="display: block;">Period</label>
+    <p-calendar name="calendar" [monthNavigator]="true" [yearNavigator]="true" yearRange="2000:2050" [(ngModel)]="time"
+        [showIcon]="true" [showTime]="true" selectionMode="range" [readonlyInput]="true" dateFormat="yy.mm.dd"
+        inputId="buttonbar" [inputStyle]="{'width':'270px'}">
+    </p-calendar>
+
+    <p-button styleClass="p-button-link " label="Today" (onClick)="onTodayClick()"></p-button>
+    <p-button styleClass="p-button-link" label="Yesterday" (onClick)="onYesterdayClick()"></p-button>
+    <p-button styleClass="p-button-link" label="Week" (onClick)="onWeekClick()"></p-button>
+    <p-button styleClass="p-button-link" label="2 Weeks" (onClick)="onTwoWeekClick()"></p-button>
+    <p-button styleClass="p-button-link" label="Month" (onClick)="onMonthClick()"></p-button>
+    <p-button styleClass="p-button-link" label="Year" (onClick)="onYearClick()"></p-button>
+    <p-button (onClick)="onApply()" label="Apply" styleClass="p-button-success"></p-button>
+    <a title="download excel">
+        <button *ngIf="hasRecords && !downloading" style=" margin-left: 10px;" pButton type="button" icon="pi pi-save"
+        (click)="exportExcel()"></button>
+        <i *ngIf="downloading"  class="pi pi-spin pi-spinner" style="margin-left: 10px"></i>
+    </a>
+    <p-toggleButton [(ngModel)]="pagingMode" onLabel="Paging" offLabel="Full Table" onIcon="pi pi-check"
+        offIcon="pi pi-times" class=" tableToggleButton" *ngIf="hasRecords" [disabled]="this.ticketsReport?.length > 1000"></p-toggleButton>
+</div>
+<p-table [filterDelay]="0"  [(first)]="first"  id="td" [value]="ticketsReport" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped"
+    [paginator]="pagingMode  || this.ticketsReport?.length > 1000" [totalRecords]="totalRecords" [rows]="20" [rowsPerPageOptions]="[10,20,40]">
+    <ng-template pTemplate="header">
+        <tr>
+            <th style=" width: 9em">TN</th>
+            <th>Create Time</th>
+            <th style=" width: 8em;">Client</th>
+            <th>Zone</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Initiator</th>
+            <th>Direction</th>
+            <th>National/ <br> International</th>
+            <th>Priority</th>
+            <th>State</th>
+        </tr>
+        <tr>
+            <th>
+            </th>
+            <th></th>
+            <th>
+            </th>
+            <th>
+                <p-multiSelect [(ngModel)]="selectedZones" [options]="zones" placeholder="All">
+                    <ng-template let-zone pTemplate="item">{{zone.label}}</ng-template>
+                </p-multiSelect>
+            </th>
+            <th>
+                <p-multiSelect [(ngModel)]="selectedTypes" [options]="types" placeholder="All">
+                    <ng-template let-type pTemplate="item">
+                        {{type.label}}
+                    </ng-template>
+                </p-multiSelect>
+            </th>
+            <th></th>
+            <th>
+                <p-multiSelect [(ngModel)]="selectedInitiators" [options]="initiators" placeholder="All">
+                    <ng-template let-type pTemplate="item">
+                        {{type.label}}
+                    </ng-template>
+                </p-multiSelect>
+            </th>
+            <th>
+                <p-multiSelect [(ngModel)]="selectedDirections" [options]="directions" placeholder="All">
+                    <ng-template let-type pTemplate="item">
+                        {{type.label}}
+                    </ng-template>
+                </p-multiSelect>
+            </th>
+            <th>
+                <p-multiSelect [(ngModel)]="selectedNatInts" [options]="natInts" placeholder="All">
+                    <ng-template let-type pTemplate="item">
+                        {{type.label}}
+                    </ng-template>
+                </p-multiSelect>
+            </th>
+            <th>
+                <p-multiSelect [(ngModel)]="selectedPriorities" [options]="priorities" placeholder="All">
+                    <ng-template let-type pTemplate="item">
+                        {{type.label}}
+                    </ng-template>
+                </p-multiSelect>
+            </th>
+            <th>
+                <p-multiSelect [(ngModel)]="selectedStates" [options]="states" placeholder="All">
+                    <ng-template let-type pTemplate="item">
+                        {{type.label}}
+                    </ng-template>
+                </p-multiSelect>
+            </th>
+        </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-rowData>
+        <tr *ngIf="!loadingData">
+            <td>{{rowData.tn}}</td>
+            <td>{{epochToString(rowData.createTime)}}</td>
+            <td style="word-break:break-word;">{{rowData.client}}</td>
+            <td>{{rowData.zone}}</td>
+            <td>{{rowData.type}}</td>
+            <td style="word-break:break-word;">{{rowData.description}}</td>
+            <td>{{rowData.initiator}}</td>
+            <td style="word-break:break-word;">{{rowData.direction}}</td>
+            <td>{{rowData.natInt}}</td>
+            <td> {{rowData.ticketPriority}}</td>
+            <td>{{rowData.state}}</td>
+        </tr>
+    </ng-template>
+</p-table>
+<i *ngIf="loadingData"  class="pi pi-spin pi-spinner" style="margin-left: 50%; margin-top: 30px; font-size: 100px;"></i>

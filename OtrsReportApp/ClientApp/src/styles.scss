@@ -1,0 +1,10 @@
+div.form-group.required>label:first-child::after{
+    content:'*';
+    color: crimson;
+    padding-left: 3px;
+}
+td.required>b:first-child::after{
+    content:'*';
+    color: crimson;
+    padding-left: 3px;
+}
