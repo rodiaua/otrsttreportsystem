@@ -1,0 +1,71 @@
+<p-toast></p-toast>
+<div class="container" style="width: 400px; margin-top: 20px;">
+    <div style="text-align: center;">
+        <h1>Registration</h1>
+    </div>
+    <form [formGroup]="userService.formModel" autocomplete="off" (submit)="onSubmit()">
+        <div class="form-group required">
+            <label for="email">Email(User Name)</label>
+            <input id="email" class="form-control" formControlName="email" placeholder="example@email.com">
+            <label class="text-danger"
+                *ngIf="userService.formModel.get('email').touched && userService.formModel.get('email').errors?.email">
+                Invalid email address
+            </label>
+            <label class="text-danger"
+                *ngIf="userService.formModel.get('email').touched && userService.formModel.get('email').errors?.required">
+                Email address is required
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="firstName">First Name</label>
+            <input id="firstName" class="form-control" formControlName="firstName">
+        </div>
+        <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input id="lastName" class="form-control" formControlName="lastName">
+        </div>
+        <div formGroupName="passwords">
+            <div class="form-group required">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" formControlName="password">
+                <label class="text-danger"
+                    *ngIf="userService.formModel.get('passwords.password').touched && userService.formModel.get('passwords.password').errors?.minlength">
+                    Minimum 6 characters
+                </label>
+                <label class="text-danger"
+                    *ngIf="userService.formModel.get('passwords.password').touched && userService.formModel.get('passwords.password').errors?.required">
+                    Password is required
+                </label>
+                <label class="text-danger"
+                    *ngIf="userService.formModel.get('passwords.password').touched && userService.formModel.get('passwords.password').errors?.lowerCase">
+                    Password should contains at least one lower case character
+                </label>
+            </div>
+            <div class="form-group required">
+                <label for="confirmPassword">Confirm password</label>
+                <input type="password" id="confirmPassword" class="form-control" formControlName="confirmPassword">
+                <label class="text-danger"
+                    *ngIf="userService.formModel.get('passwords.confirmPassword').touched && userService.formModel.get('passwords.confirmPassword').errors?.passwordMismatch">
+                    Confirm password does not match
+                </label>
+                <label class="text-danger"
+                    *ngIf="userService.formModel.get('passwords.confirmPassword').touched && userService.formModel.get('passwords.confirmPassword').errors?.required">
+                    Confirm password is required
+                </label>
+            </div>
+        </div>
+        <div class="form-group required">
+            <input id="admin" type="checkbox" class="form-check-inline" formControlName="isAdmin">
+            <label for="admin" class="form-check-label">Admin</label>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-8 offset-md-2">
+                <button type="submit" class="btn btn-primary btn-block"
+                    [disabled]="!userService.formModel.valid">Register</button>
+            </div>
+            <label class="text-danger">
+                {{error}}
+            </label>
+        </div>
+    </form>
+</div>

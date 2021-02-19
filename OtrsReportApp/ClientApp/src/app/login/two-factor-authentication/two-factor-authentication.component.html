@@ -1,0 +1,25 @@
+<p-toast></p-toast>
+<div class="container" style="width: 300px; margin-top: 20px;">
+    <div style="align-items: center;">
+        <form [formGroup]="formModel" autocomplete="off" (submit)="confirmOtp()">
+            <div class="form-group required">
+                <label for="otpCode">Code was sent to the email</label>
+                <input autocomplete="off" id="otpCode" class="form-control" formControlName="otpCode">
+                <div>
+                    <label style="display: table;" class="text-danger"
+                        *ngIf="formModel.get('otpCode').touched && formModel.get('otpCode').errors?.required">
+                        Code is required
+                    </label>
+                    <label style="display: table;">Fail attempts: {{otpFailed}}/3</label>
+                    <label style="display: table;">Session expires in: {{counter$ | async}}</label>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-8 offset-md-2">
+                    <button type="submit" class="btn btn-primary btn-block"
+                        [disabled]="!formModel.valid">Confirm</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

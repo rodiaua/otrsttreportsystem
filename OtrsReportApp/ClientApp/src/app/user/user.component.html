@@ -1,0 +1,124 @@
+<p-toast></p-toast>
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h2>Users</h2>
+        </div>
+        <div class="card-body">
+            <form [formGroup]="userForm" autocomplete="off">
+                <p-table #dt [value]="tableRowArray.controls" dataKey="value.rowId" [responsive]="true"
+                    styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" editMode="row">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Role</th>
+                            <th style="width:10rem"></th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-rowData let-editing="editing" let-i="rowIndex">
+                        <ng-container formArrayName="tableRowArray">
+                            <tr [pEditableRow]="rowData" formGroupName="{{i}}">
+                                <td>
+                                    <p-cellEditor>
+                                        <ng-template pTemplate="input">
+                                            <input pInputText type="text" class="form-control"
+                                                formControlName="userName">
+                                                <label class="text-danger"
+                                                *ngIf="tableRowArray.controls[i].get('userName').touched && tableRowArray.controls[i].get('userName').errors?.required">
+                                                Username is required
+                                            </label>
+                                        </ng-template>
+                                        <ng-template pTemplate="output">
+                                            {{rowData.value.userName}}
+                                        </ng-template>
+                                    </p-cellEditor>
+                                </td>
+                                <td>
+                                    <p-cellEditor>
+                                        <ng-template pTemplate="input">
+                                            <input pInputText type="text" class="form-control" formControlName="email">
+                                            <label class="text-danger"
+                                                *ngIf="tableRowArray.controls[i].get('email').touched && tableRowArray.controls[i].get('email').errors?.email">
+                                                Invalid email address
+                                            </label>
+                                            <label class="text-danger"
+                                                *ngIf="tableRowArray.controls[i].get('email').touched && tableRowArray.controls[i].get('email').errors?.required">
+                                                Email address is required
+                                            </label>
+                                        </ng-template>
+                                        <ng-template pTemplate="output">
+                                            {{rowData.value.email}}
+
+                                        </ng-template>
+                                    </p-cellEditor>
+                                </td>
+                                <td>
+                                    <p-cellEditor>
+                                        <ng-template pTemplate="input">
+                                            <input pInputText type="text" class="form-control"
+                                                formControlName="firstName">
+                                        </ng-template>
+                                        <ng-template pTemplate="output">
+                                            {{rowData.value.firstName}}
+                                        </ng-template>
+                                    </p-cellEditor>
+                                </td>
+                                <td>
+                                    <p-cellEditor>
+                                        <ng-template pTemplate="input">
+                                            <input pInputText type="text" class="form-control"
+                                                formControlName="lastName">
+                                        </ng-template>
+                                        <ng-template pTemplate="output">
+                                            {{rowData.value.lastName}}
+
+                                        </ng-template>
+                                    </p-cellEditor>
+                                </td>
+                                <td>
+                                    <p-cellEditor>
+                                        <ng-template pTemplate="input">
+                                            <select class="form-control" formControlName="role">
+                                                <option>Admin</option>
+                                                <option>User</option>
+                                            </select>
+                                            <!-- <input id="admin" type="checkbox" class="form-check-inline"
+                                                formControlName="role"> -->
+                                            <!-- <label for="admin" class="form-check-label">Admin</label> -->
+                                        </ng-template>
+                                        <ng-template pTemplate="output">
+                                            {{rowData.value.role}}
+                                        </ng-template>
+                                    </p-cellEditor>
+                                </td>
+                                <td style="text-align:center">
+                                    <button *ngIf="!editing" pButton pRipple type="button" pInitEditableRow
+                                        icon="pi pi-pencil" (click)="onRowEditInit(rowData)"
+                                        class="p-button-rounded p-button-text"></button>
+                                    <button *ngIf="!editing" pButton pRipple type="button" 
+                                        icon="pi pi-trash" (click)="onUserDelete(rowData)"
+                                        class="p-button-rounded p-button-text"></button>
+                                    <button *ngIf="!editing" pButton pRipple type="button" 
+                                        icon="pi pi-lock-open" (click)="showResetPasswordDialog(rowData)"
+                                        class="p-button-rounded p-button-text"></button>
+                                    <button *ngIf="editing" pButton pRipple type="button" pSaveEditableRow
+                                        icon="pi pi-check" (click)="onRowEditSave(rowData)"
+                                        class="p-button-rounded p-button-text p-button-success p-mr-2"></button>
+                                    <button *ngIf="editing" pButton pRipple type="button" pCancelEditableRow
+                                        icon="pi pi-times" (click)="onRowEditCancel(rowData, rowData.value.rowId)"
+                                        class="p-button-rounded p-button-text p-button-danger"></button>
+                                </td>
+                            </tr>
+                        </ng-container>
+                    </ng-template>
+                </p-table>
+            </form>
+        </div>
+        <p-button label="Add User" styleClass="p-button-link" icon="pi pi-plus" [routerLink]="['/users/registration']">
+        </p-button>
+    </div>
+
+</div>

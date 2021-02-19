@@ -1,0 +1,23 @@
+<!-- <p-menubar [model]="items"></p-menubar> -->
+<nav class="navbar navbar-dark bg-dark">
+    <a class="navbar-brand text-white" style="cursor: pointer;" [routerLink]="['/reportTable']" >
+        <img src="assets/img/logo.svg" width="150px" height="40px" class="d-inline-block align-top" alt="">
+        <h4 style="float: right; padding-top: 5px;">Otrs Report</h4>
+    </a>
+    <div class="mr-auto" style="display: inline-block;" *ngIf="userConfirmed">
+        <ul class="nav">
+            <li class="nav-item active">
+            <a class="nav-link text-white" style="font-size: 1.2rem;" [routerLink]="['/reportTable']">Home</a>
+            </li>
+            <li class="nav-item" *ngIf="service.getUserRole() == 'Admin'">
+            <a class="nav-link text-white" style="font-size: 1.2rem;"  [routerLink]="['/users']">Users</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white" style="font-size: 1.2rem;"  [routerLink]="['/report-creator']">Report Creator</a>
+            </li>
+        </ul>
+    </div>
+    <a class="pi pi-user text-white" style="font-size: 2rem; cursor: pointer; margin-right: 10px; margin-left: auto;"
+    [routerLink]="['/user/profile']" *ngIf="userConfirmed"></a>
+    <button class="btn btn-danger my-2 my-sm-0" (click)="onLogout()" *ngIf="userConfirmed">Logout</button>
+</nav>

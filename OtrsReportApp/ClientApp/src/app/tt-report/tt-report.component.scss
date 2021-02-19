@@ -1,0 +1,18 @@
+td {
+    font-size: 14px;
+}
+:host ::ng-deep .p-multiselect-label-container  {
+ width: 5em;
+}
+
+:host ::ng-deep .p-datatable table{
+    min-width: 1500px;
+}
+.tableToggleButton{
+    width: 10em;
+    margin-left: 10px;
+}
+
+:host ::ng-deep .p-paginator{
+    border: 0px;
+}
