@@ -1,0 +1,17 @@
+
+    <div class="card">
+        <div class=" card-body">
+            <p-pickList [source]="list1" [target]="list2" sourceHeader="Pending Tickets" targetHeader="Acknowledged Tickets"
+            [dragdrop]="false" [sourceStyle]="{'max-height':'700px'}" [targetStyle]="{'max-height':'700px'}" [showSourceControls]="false" [showTargetControls]="false"
+            (onMoveToTarget)="onMoveToTargetHandle($event)" (onMoveToSource)="onMoveToSourceHandle($event)">  
+            <ng-template let-tt pTemplate="item">
+                <div>
+                    <p style="font-size:15px;">{{tt.tn}}</p>
+                    <p>{{tt.title}}</p>
+                </div>
+            </ng-template>
+        </p-pickList>
+        </div>
+    </div>
+    
+

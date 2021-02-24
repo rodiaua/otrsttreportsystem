@@ -18,6 +18,7 @@ import { JwtInterceptor } from "./auth/jwt.interceptor";
 import { ErrorInterceptor } from "./auth/error.interceptor";
 import {CheckboxModule} from 'primeng/checkbox';
 import {DynamicDialogModule} from 'primeng/dynamicdialog';
+import {PickListModule} from 'primeng/picklist';
 
 
 
@@ -35,6 +36,7 @@ import { ChangePasswordComponent } from './user-profile/change-password/change-p
 import { ResetPasswordComponent } from './user/reset-password/reset-password.component';
 import { TwoFactorAuthenticationComponent } from './login/two-factor-authentication/two-factor-authentication.component';
 import { ReportCreatorComponent } from './report-creator/report-creator.component';
+import { PendingTicketsComponent } from './pending-tickets/pending-tickets.component';
 
 
 @NgModule({
@@ -50,9 +52,11 @@ import { ReportCreatorComponent } from './report-creator/report-creator.componen
     ChangePasswordComponent,
     ResetPasswordComponent,
     TwoFactorAuthenticationComponent,
-    ReportCreatorComponent
+    ReportCreatorComponent,
+    PendingTicketsComponent
   ],
   imports: [
+    PickListModule,
     BrowserModule,
     AppRoutingModule,
     MenubarModule,

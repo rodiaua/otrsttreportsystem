@@ -8,6 +8,7 @@ import { LoginComponent } from './login/login.component';
 import {  AuthGuard} from "./auth/auth.guard";
 import { UserProfileComponent } from './user-profile/user-profile.component';
 import { ReportCreatorComponent } from './report-creator/report-creator.component';
+import { PendingTicketsComponent } from './pending-tickets/pending-tickets.component';
 
 const routes: Routes = [
   // {path: 'user', component: UserComponent, children:[
@@ -19,6 +20,8 @@ const routes: Routes = [
   {path: 'reportTable', component: TtReportComponent, canActivate: [AuthGuard], data: {permittedRoles: ["Admin", "User"]}},
   {path: 'user/profile', component: UserProfileComponent, canActivate: [AuthGuard], data: {permittedRoles: ["Admin", "User"]}},
   {path: 'report-creator', component: ReportCreatorComponent, canActivate: [AuthGuard], data: {permittedRoles: ["Admin", "User"]}},
+  {path: 'pending-tickets', component: PendingTicketsComponent, canActivate: [AuthGuard], data: {permittedRoles: ["Admin", "User"]}},
+
   
   {path: '**', redirectTo: 'user/profile'}
 ];

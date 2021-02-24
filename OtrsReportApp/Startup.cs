@@ -20,6 +20,7 @@ using System;
 using OtrsReportApp.Configuration;
 using OtrsReportApp.Controllers;
 using OtrsReportApp.Services.EmailService;
+using OtrsReportApp.Extensions;
 
 namespace OtrsReportApp
 {
@@ -54,6 +55,12 @@ namespace OtrsReportApp
       }
       , ServiceLifetime.Scoped);
 
+      services.AddDbContext<TicketDbContext>(options =>
+      {
+        options.UseMySql(Configuration.GetConnectionString("OtrsTickets"));
+      }
+      , ServiceLifetime.Scoped);
+
       services.AddIdentity<AccountUser, AccountRole>().
         AddEntityFrameworkStores<AccountDbContext>();
 
@@ -71,7 +78,8 @@ namespace OtrsReportApp
 
       services.AddScoped<UserService>();
       services.AddScoped<TwoFAService>();
-      services.AddScoped<IEmailService, WindowsEmailService>();
+      services.AddEmailService();
+
       services.AddControllers()
         .AddNewtonsoftJson();
 
@@ -122,18 +130,12 @@ namespace OtrsReportApp
         app.UseHsts();
       }
 
-      //app.UseHttpsRedirection();
-      //app.UseStaticFiles();
       if (!env.IsDevelopment())
       {
-        //app.UseFileServer();
-        //app.UseDefaultFiles();
-        //app.UseSpaStaticFiles();
         app.UseStaticFiles();
-
-
-
       }
+
+      app.UpdateOtsTciketDb();
 
       app.UseRouting();
       app.UseAuthentication();

@@ -74,5 +74,40 @@ namespace OtrsReportApp.Controllers
       return report;
     }
 
+    [HttpGet("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public IEnumerable<object> GetPendingTickets()
+    {
+      return _otrsServcie.GetPendingTickets();
+    }
+
+    [HttpGet("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public IEnumerable<object> GetAcknowledgedTickets()
+    {
+      return _otrsServcie.GetAcknowledgedTickets();
+    }
+
+    [HttpPost("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public async Task SaveAcknowledgedTickets([FromBody] IEnumerable<long> ids)
+    {
+      await _otrsServcie.SaveAcknowledgedTickets(ids);
+    }
+
+    [HttpPost("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public async Task RemoveAcknowledgedTickets([FromBody] IEnumerable<long> ids)
+    {
+      if(ids.Count() == 1)
+      {
+        await _otrsServcie.RemoveAcknowledgedTickets(ids.First());
+      }
+      else
+      {
+        await _otrsServcie.RemoveAcknowledgedTickets(ids);
+      }
+    }
+
   }
 }

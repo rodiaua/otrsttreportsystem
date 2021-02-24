@@ -1,0 +1,28 @@
+
+:host ::ng-deep ul.p-picklist-list.p-picklist-source li.p-picklist-item.p-ripple{
+    background-color:  rgb(255, 192, 193);
+    border-color: rgb(255, 133, 135);
+}
+
+
+:host ::ng-deep ul.p-picklist-list.p-picklist-target li.p-picklist-item.p-ripple{
+    background-color:  rgb(189, 255, 233);
+    border-color: rgb(87, 250, 196);
+}
+
+:host ::ng-deep li.p-picklist-item.p-ripple{
+    margin: 5px;
+    border-radius: 10px;
+    border-width: 1px;
+    border-style: solid;
+}
+
+:host ::ng-deep ul.p-picklist-list.p-picklist-source li.p-picklist-item.p-ripple:focus{
+    background-color:  rgb(255, 243, 243)!important;
+    box-shadow: none;
+}
+
+:host ::ng-deep ul.p-picklist-list.p-picklist-target li.p-picklist-item.p-ripple:focus{
+    background-color: rgb(237, 253, 248)!important;
+    box-shadow: none;
+}

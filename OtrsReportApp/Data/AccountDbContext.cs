@@ -12,7 +12,7 @@ namespace OtrsReportApp.Data
 {
   public class AccountDbContext : IdentityDbContext<AccountUser, AccountRole, string>
   {
-    public AccountDbContext(DbContextOptions options) : base(options)
+    public AccountDbContext(DbContextOptions<AccountDbContext> options) : base(options)
     {
 
     }

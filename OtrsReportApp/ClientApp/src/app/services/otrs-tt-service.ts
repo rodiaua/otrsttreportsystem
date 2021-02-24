@@ -33,4 +33,20 @@ export class OtrsTTService{
     downloadReport(filters: Filters){
         return this.http.post(`${this.domain}/downloadReport`, filters, {responseType: 'blob'});
     }
+
+    getPendingTickets(){
+        return this.http.get(`${this.domain}/getPendingTickets`).toPromise();
+    }
+
+    getAcknowledgedTickets(){
+        return this.http.get(`${this.domain}/getAcknowledgedTickets`).toPromise();
+    }
+
+    saveAcknowledgedTickets(ids: number[]){
+        return this.http.post(`${this.domain}/saveAcknowledgedTickets`,ids).toPromise();
+    }
+
+    removeAcknowledgedTickets(ids: number[]){
+        return this.http.post(`${this.domain}/removeAcknowledgedTickets`,ids).toPromise();
+    }
 }
