@@ -19,6 +19,7 @@ import { ErrorInterceptor } from "./auth/error.interceptor";
 import {CheckboxModule} from 'primeng/checkbox';
 import {DynamicDialogModule} from 'primeng/dynamicdialog';
 import {PickListModule} from 'primeng/picklist';
+import {TabViewModule} from 'primeng/tabview';
 
 
 
@@ -56,6 +57,7 @@ import { PendingTicketsComponent } from './pending-tickets/pending-tickets.compo
     PendingTicketsComponent
   ],
   imports: [
+    TabViewModule,
     PickListModule,
     BrowserModule,
     AppRoutingModule,

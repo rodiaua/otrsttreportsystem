@@ -1,16 +1,12 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit} from '@angular/core';
 import { TicketReport } from '../models/dto/ticket-report';
 import { OtrsTTService } from '../services/otrs-tt-service';
 import { EpochConverter } from '../extensions/epoch-converter';
-import * as XLSX from 'xlsx';
 import { MessageService, MenuItem, SelectItem } from 'primeng/api';
 import { Period } from '../models/dto/period';
 import { Filters } from '../models/dto/filters';
-import { saveAs } from 'file-saver';
 import * as FileSaver from 'file-saver';
 import { Report } from '../models/dto/report';
-import { Table } from 'primeng/table';
-
 
 @Component({
   selector: 'app-tt-report',
