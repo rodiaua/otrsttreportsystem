@@ -9,5 +9,6 @@ export interface TicketReport {
     natInt: string,
     state: string,
     initiator: string,
-    ticketPriority: string
+    ticketPriority: string,
+    closeTime: number
 }

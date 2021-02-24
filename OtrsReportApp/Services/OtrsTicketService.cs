@@ -13,6 +13,9 @@ using System.IO;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using AutoMapper.Internal;
+using OtrsReportApp.Data;
+using System.Runtime.CompilerServices;
+using OtrsReportApp.Models.OtrsTicket;
 
 namespace OtrsReportApp.Services
 {
@@ -33,7 +36,8 @@ namespace OtrsReportApp.Services
       using (var scope = _scopeFactory.CreateScope())
       {
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var dynamicFieldsValues = db.DynamicFieldValue.Where(fields => ids.Contains(fields.ObjectId)).Include(field => field.Field).Where(field => field.Field.Name.Contains("Key")).ToList();
+        var dynamicFieldsValues = db.DynamicFieldValue.Where(fields => ids.Contains(fields.ObjectId)).Include(field => field.Field).Where(field => field.Field.Name.Contains("Key") ||
+        field.Field.Name.Equals("TicketFreeTime1")).ToList();
 
         Dictionary<long, Dictionary<string, string>> ttsDynamicFields = new Dictionary<long, Dictionary<string, string>>();
         foreach (var id in ids)
@@ -60,6 +64,9 @@ namespace OtrsReportApp.Services
                 if (configs.ContainsKey(dfValue.ValueText))
                   result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), configs.First(p => p.Key.Equals(dfValue.ValueText)).Value);
                 else result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), dfValue.ValueText);
+              }else if(dfValue.ValueDate != null)
+              {
+                result.TryAdd("CloseTime", dfValue.ValueDate.ToString());
               }
             }
           }
@@ -116,7 +123,7 @@ namespace OtrsReportApp.Services
           {
             foreach (var field in dFields)
             {
-              typeof(TicketReportDTO).GetProperty(field.Key)?.SetValue(ticketReportDTO, field.Value);
+              typeof(TicketReportDTO).GetProperty(field.Key)?.SetValue(ticketReportDTO, !field.Key.Equals("CloseTime") ? field.Value: DateTime.Parse(field.Value));
             }
           }
           if (IsTicketDTOValid(ticketReportDTO, filters)) ticketReportDTOs.Add(ticketReportDTO);
@@ -334,9 +341,10 @@ namespace OtrsReportApp.Services
         worksheet.Cell(currentRow, 9).Value = "National/International";
         worksheet.Cell(currentRow, 10).Value = "Priority";
         worksheet.Cell(currentRow, 11).Value = "State";
+        worksheet.Cell(currentRow, 12).Value = "Close Time";
 
 
-        foreach(var item in report)
+        foreach (var item in report)
         {
           currentRow++;
           worksheet.Cell(currentRow, 1).DataType = XLDataType.Number;
@@ -351,6 +359,7 @@ namespace OtrsReportApp.Services
           worksheet.Cell(currentRow, 9).Value = item.NatInt;
           worksheet.Cell(currentRow, 10).Value = item.TicketPriority;
           worksheet.Cell(currentRow, 11).Value = item.State;
+          worksheet.Cell(currentRow, 12).Value = item.CloseTime;
         }
 
 
@@ -362,5 +371,137 @@ namespace OtrsReportApp.Services
     }
 
 
+    public IEnumerable<OtrsTicketDTO> GetPendingTickets()
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+        {
+          var ackTickets = GetAcknowledgedTickets().Select(x => x.Id);
+          var result = (from t in context.Ticket
+                       where t.CreateTime > DateTime.Now.Date && !ackTickets.Contains(t.Id)
+                       select t).ToList();
+          if (result.Count() > 0)
+          {
+            foreach (var t in result)
+            {
+              yield return new OtrsTicketDTO() { Id = t.Id, Tn = t.Tn, Title = t.Title};
+            }
+          }
+          else yield break;
+        }
+      }
+    }
+
+    public IEnumerable<OtrsTicketDTO> GetTickets()
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+        {
+          var result = from t in context.Ticket
+                       where t.CreateTime > DateTime.Now.Date 
+                       select t;
+          foreach (var t in result)
+          {
+            yield return new OtrsTicketDTO() { Id = t.Id, Tn = t.Tn, Title = t.Title };
+          }
+        }
+      }
+    }
+
+    public IEnumerable<OtrsTicketDTO> GetTickets(List<long> ids)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+        {
+          var result = from t in context.Ticket
+                       where ids.Contains(t.Id)
+                       select t;
+          foreach (var t in result)
+          {
+            yield return new OtrsTicketDTO() { Id = t.Id, Tn = t.Tn, Title = t.Title };
+          }
+        }
+      }
+    }
+
+    public IEnumerable<OtrsTicketDTO> GetAcknowledgedTickets()
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          var ids = from t in context.AcknowledgedTicket
+                       select t.TicketId;
+         return GetTickets(ids.ToList());
+        }
+      }
+    }
+
+    public AcknowledgedTicket GetAcknowledgedTickets(long id)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          var acknowledgedTicket = from t in context.AcknowledgedTicket
+                    where t.TicketId == id
+                    select t;
+          return acknowledgedTicket.FirstOrDefault();
+        }
+      }
+    }
+
+    public IEnumerable<AcknowledgedTicket> GetAcknowledgedTickets(IEnumerable<long> ids)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          var acknowledgedTicket = from t in context.AcknowledgedTicket
+                                   where ids.Contains(t.TicketId)
+                                   select t;
+          return acknowledgedTicket.ToList();
+        }
+      }
+    }
+
+    public async Task SaveAcknowledgedTickets(IEnumerable<long> ids)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          context.AcknowledgedTicket.AddRange(ids.Select(x=> { return new AcknowledgedTicket() { TicketId = x }; }));
+          await context.SaveChangesAsync();
+        }
+      }
+    }
+
+    public async Task RemoveAcknowledgedTickets(long id)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          context.AcknowledgedTicket.Remove(GetAcknowledgedTickets(id));
+          await context.SaveChangesAsync();
+        }
+      }
+    }
+
+    public async Task RemoveAcknowledgedTickets(IEnumerable<long> ids)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          context.AcknowledgedTicket.RemoveRange(GetAcknowledgedTickets(ids));
+          await context.SaveChangesAsync();
+        }
+      }
+    }
   }
 }
