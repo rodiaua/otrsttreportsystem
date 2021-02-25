@@ -49,4 +49,8 @@ export class OtrsTTService{
     removeAcknowledgedTickets(ids: number[]){
         return this.http.post(`${this.domain}/removeAcknowledgedTickets`,ids).toPromise();
     }
+
+    getLogs(){
+        return this.http.get<string>(`${this.domain}/getLogs`).toPromise();
+    }
 }

@@ -1,12 +1,14 @@
 
     <div style="margin-top: 10px;">
-        <p-tabView>
+        <p-tabView (onChange)="onChangeHandle($event)">
             <p-tabPanel header="Pending Tickets">
                 <div class="card">
                     <div class=" card-body">
                         <p-pickList [source]="list1" [target]="list2" sourceHeader="Pending Tickets" targetHeader="Acknowledged Tickets"
                         [dragdrop]="false" [sourceStyle]="{'max-height':'700px'}" [targetStyle]="{'max-height':'700px'}" [showSourceControls]="false" [showTargetControls]="false"
-                        (onMoveToTarget)="onMoveToTargetHandle($event)" (onMoveToSource)="onMoveToSourceHandle($event)">  
+                        (onMoveToTarget)="onMoveToTargetHandle($event)" (onMoveToSource)="onMoveToSourceHandle($event)"
+                         (onMoveAllToTarget)="onMoveAllToTargetHandle($event)"
+                         (onMoveAllToSource)="onMoveAllToSourceHandle($event)">  
                         <ng-template let-tt pTemplate="item">
                             <div>
                                 <p style="font-size:15px;">{{tt.tn}}</p>
@@ -18,7 +20,7 @@
                 </div>
             </p-tabPanel>
             <p-tabPanel header="Logs">
-                Content 2
+                {{logs}}
             </p-tabPanel>
         </p-tabView>
     </div>

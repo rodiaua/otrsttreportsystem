@@ -21,6 +21,9 @@ using OtrsReportApp.Configuration;
 using OtrsReportApp.Controllers;
 using OtrsReportApp.Services.EmailService;
 using OtrsReportApp.Extensions;
+using Microsoft.Extensions.Logging;
+using System.IO;
+using OtrsReportApp.Data.Logging;
 
 namespace OtrsReportApp
 {
@@ -46,20 +49,11 @@ namespace OtrsReportApp
       });
       services.AddSingleton(cfg.CreateMapper());
 
-      services.AddDbContext<ApplicationDbContext>(options =>
-      options.UseMySql(Configuration.GetConnectionString("TestOtrs")));
+      services.AddDbContextsBaseOnOS(Configuration);
 
-      services.AddDbContext<AccountDbContext>(options =>
-      {
-        options.UseMySql(Configuration.GetConnectionString("ReportSystemAccounts"));
-      }
-      , ServiceLifetime.Scoped);
+      services.AddTransient<Logger>();
 
-      services.AddDbContext<TicketDbContext>(options =>
-      {
-        options.UseMySql(Configuration.GetConnectionString("OtrsTickets"));
-      }
-      , ServiceLifetime.Scoped);
+      services.AddTransient<ILoggingDatabase, SqlLoggingDatabase>();
 
       services.AddIdentity<AccountUser, AccountRole>().
         AddEntityFrameworkStores<AccountDbContext>();
@@ -117,8 +111,12 @@ namespace OtrsReportApp
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
     {
+      /*var path = Directory.GetCurrentDirectory();
+      loggerFactory.AddFile("/Logs/Log.txt");*/
+      /*app.AddLoggingToFile(loggerFactory);*/
+
       if (env.IsDevelopment())
       {
         app.UseDeveloperExceptionPage();
@@ -135,7 +133,7 @@ namespace OtrsReportApp
         app.UseStaticFiles();
       }
 
-      app.UpdateOtsTciketDb();
+      /*app.UpdateOtsTciketDb();*/
 
       app.UseRouting();
       app.UseAuthentication();

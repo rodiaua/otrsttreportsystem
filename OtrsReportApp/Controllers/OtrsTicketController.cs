@@ -8,6 +8,13 @@ using System.Threading.Tasks;
 using OtrsReportApp.Models.DTO;
 using System.IO;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Identity;
+using OtrsReportApp.Models.Account;
+using System.Text;
+using OtrsReportApp.Data.Logging;
+using System.Security.Claims;
+using Org.BouncyCastle.Asn1.Cmp;
 
 namespace OtrsReportApp.Controllers
 {
@@ -16,10 +23,14 @@ namespace OtrsReportApp.Controllers
   public class OtrsTicketController: Controller
   {
    private readonly OtrsTicketService _otrsServcie;
+    private readonly Logger _logger;
+    private UserManager<AccountUser> _userManager;
 
-    public OtrsTicketController(OtrsTicketService otrs)
+    public OtrsTicketController(OtrsTicketService otrs, Logger logger, UserManager<AccountUser> userManager)
     {
       _otrsServcie = otrs;
+      _logger = logger;
+      _userManager = userManager;
     }
 
     //[HttpPost("[action]")]
@@ -92,21 +103,54 @@ namespace OtrsReportApp.Controllers
     [Authorize(Roles = "Admin,User")]
     public async Task SaveAcknowledgedTickets([FromBody] IEnumerable<long> ids)
     {
-      await _otrsServcie.SaveAcknowledgedTickets(ids);
+      InitializeUserForLogging();
+      var result = await _otrsServcie.SaveAcknowledgedTickets(ids);
+      foreach(var x in result)
+      {
+        await _logger.Log($"Acknowlaged [TT#{x.Tn}] {x.Title}");
+      }
     }
 
     [HttpPost("[action]")]
     [Authorize(Roles = "Admin,User")]
     public async Task RemoveAcknowledgedTickets([FromBody] IEnumerable<long> ids)
     {
-      if(ids.Count() == 1)
+      InitializeUserForLogging();
+      if (ids.Count() == 1)
       {
-        await _otrsServcie.RemoveAcknowledgedTickets(ids.First());
+        var result = await _otrsServcie.RemoveAcknowledgedTickets(ids.First());
+        await _logger.Log($"Undo acknowlagment of [TT#{result.Tn}] {result.Title}");
       }
       else
       {
-        await _otrsServcie.RemoveAcknowledgedTickets(ids);
+        var result = await _otrsServcie.RemoveAcknowledgedTickets(ids);
+        foreach (var x in result)
+        {
+          await _logger.Log($"Undo acknowlagment of [TT#{x.Tn}] {x.Title}");
+        }
       }
+    }
+
+    [HttpGet("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public string GetLogs()
+    {
+      using (var stream = System.IO.File.Open("Logs/Log-20210224.txt", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+      {
+        List<byte> bytes = new List<byte>(); 
+        while (stream.CanRead)
+        {
+          bytes.Add((byte)stream.ReadByte());
+        }
+        return Encoding.UTF8.GetString(bytes.ToArray());
+      }
+    }
+
+    private void InitializeUserForLogging()
+    {
+      var userId = User.Claims.First(c => c.Type.Equals("userId")).Value;
+      var user = _userManager.FindByIdAsync(userId).Result;
+      _logger.User = user;
     }
 
   }

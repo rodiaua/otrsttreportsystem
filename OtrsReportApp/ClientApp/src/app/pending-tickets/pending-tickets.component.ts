@@ -10,6 +10,7 @@ export class PendingTicketsComponent implements OnInit {
 
   list1: any = [];
   list2: any = [];
+  logs: string = "";
 
   constructor(private otrsService: OtrsTTService) { }
 
@@ -24,6 +25,20 @@ export class PendingTicketsComponent implements OnInit {
 
   onMoveToSourceHandle(event){
     this.otrsService.removeAcknowledgedTickets(event.items.map(x => x.id));
+  }
+
+  onMoveAllToTargetHandle(event){
+    this.otrsService.saveAcknowledgedTickets(event.items.map(x => x.id));
+  }
+
+  onMoveAllToSourceHandle(event){
+    this.otrsService.removeAcknowledgedTickets(event.items.map(x => x.id));
+  }
+
+  async onChangeHandle(event){
+    if(event.index == 1){
+      this.logs = await this.otrsService.getLogs();
+    }
   }
 
 }

@@ -468,7 +468,7 @@ namespace OtrsReportApp.Services
       }
     }
 
-    public async Task SaveAcknowledgedTickets(IEnumerable<long> ids)
+    public async Task<List<OtrsTicketDTO>> SaveAcknowledgedTickets(IEnumerable<long> ids)
     {
       using (var scope = _scopeFactory.CreateScope())
       {
@@ -476,11 +476,12 @@ namespace OtrsReportApp.Services
         {
           context.AcknowledgedTicket.AddRange(ids.Select(x=> { return new AcknowledgedTicket() { TicketId = x }; }));
           await context.SaveChangesAsync();
+          return GetTickets(ids.ToList()).ToList();
         }
       }
     }
 
-    public async Task RemoveAcknowledgedTickets(long id)
+    public async Task<OtrsTicketDTO> RemoveAcknowledgedTickets(long id)
     {
       using (var scope = _scopeFactory.CreateScope())
       {
@@ -488,11 +489,12 @@ namespace OtrsReportApp.Services
         {
           context.AcknowledgedTicket.Remove(GetAcknowledgedTickets(id));
           await context.SaveChangesAsync();
+          return GetTickets(new long[] {id}.ToList()).FirstOrDefault();
         }
       }
     }
 
-    public async Task RemoveAcknowledgedTickets(IEnumerable<long> ids)
+    public async Task<List<OtrsTicketDTO>> RemoveAcknowledgedTickets(IEnumerable<long> ids)
     {
       using (var scope = _scopeFactory.CreateScope())
       {
@@ -500,6 +502,7 @@ namespace OtrsReportApp.Services
         {
           context.AcknowledgedTicket.RemoveRange(GetAcknowledgedTickets(ids));
           await context.SaveChangesAsync();
+          return GetTickets(ids.ToList()).ToList();
         }
       }
     }
