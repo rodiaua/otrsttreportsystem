@@ -24,6 +24,7 @@ using OtrsReportApp.Extensions;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using OtrsReportApp.Data.Logging;
+using OtrsReportApp.Services.LoggingHubService;
 
 namespace OtrsReportApp
 {
@@ -52,6 +53,8 @@ namespace OtrsReportApp
       services.AddDbContextsBaseOnOS(Configuration);
 
       services.AddTransient<Logger>();
+
+      services.AddSignalR();
 
       services.AddTransient<ILoggingDatabase, SqlLoggingDatabase>();
 
@@ -133,6 +136,11 @@ namespace OtrsReportApp
         app.UseStaticFiles();
       }
 
+      app.UseCors(builder => builder.WithOrigins("http://localhost:4200")
+      .AllowAnyHeader()
+      .AllowAnyMethod()
+      .AllowCredentials()).UseCors("CorsPolicy");
+
       /*app.UpdateOtsTciketDb();*/
 
       app.UseRouting();
@@ -140,6 +148,7 @@ namespace OtrsReportApp
       app.UseAuthorization();
       app.UseEndpoints(endpoints =>
       {
+        endpoints.MapHub<LoggingHub>("/logs");
         endpoints.MapControllerRoute(
                   name: "default",
                   pattern: "{controller}/{action=Index}/{id?}");

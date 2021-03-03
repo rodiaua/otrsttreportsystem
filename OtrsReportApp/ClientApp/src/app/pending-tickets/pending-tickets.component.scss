@@ -1,7 +1,7 @@
 
 :host ::ng-deep ul.p-picklist-list.p-picklist-source li.p-picklist-item.p-ripple{
-    background-color:  rgb(255, 192, 193);
-    border-color: rgb(255, 133, 135);
+    background-color:  rgb(192, 240, 255);
+    border-color: rgb(133, 172, 255);
 }
 
 
@@ -18,7 +18,7 @@
 }
 
 :host ::ng-deep ul.p-picklist-list.p-picklist-source li.p-picklist-item.p-ripple:focus{
-    background-color:  rgb(255, 243, 243)!important;
+    background-color:  rgb(243, 252, 255)!important;
     box-shadow: none;
 }
 
@@ -26,3 +26,23 @@
     background-color: rgb(237, 253, 248)!important;
     box-shadow: none;
 }
+
+:host ::ng-deep .p-scrollpanel {
+
+    &.bluebar {
+        .p-scrollpanel-wrapper {
+            border-right: 9px solid var(--layer-1);
+        }
+
+        .p-scrollpanel-bar {
+            background-color: var(--primary-color);
+            opacity: 1;
+            transition: background-color .2s;
+
+            &:hover {
+                background-color: #007ad9;
+            }
+        }
+    }
+
+}    

@@ -6,6 +6,9 @@ import { TicketReport } from "../models/dto/ticket-report";
 import { FilteringItems } from "../models/dto/filtering-items";
 import { Filters } from '../models/dto/filters';
 import { Report } from '../models/dto/report';
+import { LogItem } from "../models/log-item";
+import {OtrsTicket} from "../models/otrs-ticket";
+import { AcknowledgedTicket } from "../models/acknowledgedTicket";
 
 
 @Injectable({ providedIn: 'root' })
@@ -35,22 +38,24 @@ export class OtrsTTService{
     }
 
     getPendingTickets(){
-        return this.http.get(`${this.domain}/getPendingTickets`).toPromise();
+        return this.http.get<OtrsTicket[]>(`${this.domain}/getPendingTickets`).toPromise();
     }
 
     getAcknowledgedTickets(){
-        return this.http.get(`${this.domain}/getAcknowledgedTickets`).toPromise();
+        return this.http.get<OtrsTicket[]>(`${this.domain}/getAcknowledgedTickets`).toPromise();
     }
 
-    saveAcknowledgedTickets(ids: number[]){
-        return this.http.post(`${this.domain}/saveAcknowledgedTickets`,ids).toPromise();
+    saveAcknowledgedTickets(acknowledgedTickets: AcknowledgedTicket[]){
+        return this.http.post(`${this.domain}/saveAcknowledgedTickets`,acknowledgedTickets).toPromise();
     }
 
     removeAcknowledgedTickets(ids: number[]){
         return this.http.post(`${this.domain}/removeAcknowledgedTickets`,ids).toPromise();
     }
 
-    getLogs(){
-        return this.http.get<string>(`${this.domain}/getLogs`).toPromise();
+    getPendingTicketLogs(){
+        return this.http.get<LogItem[]>(`${this.domain}/getPendingTicketLogs`).toPromise();
     }
+
+
 }

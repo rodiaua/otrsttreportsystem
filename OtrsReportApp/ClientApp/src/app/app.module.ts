@@ -20,6 +20,8 @@ import {CheckboxModule} from 'primeng/checkbox';
 import {DynamicDialogModule} from 'primeng/dynamicdialog';
 import {PickListModule} from 'primeng/picklist';
 import {TabViewModule} from 'primeng/tabview';
+import { TagModule } from 'primeng/tag';
+import {ScrollPanelModule} from 'primeng/scrollpanel';
 
 
 
@@ -57,6 +59,8 @@ import { PendingTicketsComponent } from './pending-tickets/pending-tickets.compo
     PendingTicketsComponent
   ],
   imports: [
+    ScrollPanelModule,
+    TagModule,
     TabViewModule,
     PickListModule,
     BrowserModule,

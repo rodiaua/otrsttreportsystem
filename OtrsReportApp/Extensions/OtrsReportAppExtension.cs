@@ -32,7 +32,8 @@ namespace OtrsReportApp.Extensions
       if (OperatingSystem.IsWindows())
       {
         services.AddScoped<IEmailService, WindowsEmailService>();
-      }else if (OperatingSystem.IsLinux())
+      }
+      else if (OperatingSystem.IsLinux())
       {
         services.AddScoped<IEmailService, LinuxEmailService>();
       }
@@ -48,38 +49,61 @@ namespace OtrsReportApp.Extensions
       {
         File.Create(filePath);
       }
-      lf.AddFile(filePath, LogLevel.Information, null, false, 1073741824l,31, "{Timestamp:o} {Message}" + "\n");
+      lf.AddFile(filePath, LogLevel.Information, null, false, 1073741824l, 31, "{Timestamp:o} {Message}" + "\n");
       return app;
     }
 
     public static IServiceCollection AddDbContextsBaseOnOS(this IServiceCollection services, IConfiguration configuration)
     {
+
+
       services.AddDbContext<ApplicationDbContext>(options =>
-      options.UseMySql(configuration.GetConnectionString("TestOtrs")));
+      {
+        var cs = configuration.GetConnectionString("Otrs");
+        options.UseMySql(cs);
+      });
       if (OperatingSystem.IsWindows())
-      { 
+      {
         services.AddDbContext<AccountDbContext>(options =>
         {
-          options.UseMySql(configuration.GetConnectionString("ReportSystemAccountsWindows"));
+          var cs = configuration.GetConnectionString("ReportSystemAccountsWindows");
+          options.UseMySql(cs);
         }
         , ServiceLifetime.Scoped);
 
         services.AddDbContext<TicketDbContext>(options =>
         {
-          options.UseMySql(configuration.GetConnectionString("OtrsTicketsWindows"));
+          var cs = configuration.GetConnectionString("OtrsTicketsWindows");
+          options.UseMySql(cs);
         }
         , ServiceLifetime.Scoped);
 
         services.AddDbContext<LoggingDbContext>(options =>
         {
-          options.UseMySql(configuration.GetConnectionString("LoggingDbWindows"));
+          var cs = configuration.GetConnectionString("LoggingDbWindows");
+          options.UseMySql(cs);
         }
         , ServiceLifetime.Scoped);
-      } else if (OperatingSystem.IsLinux())
+      }
+      else if (OperatingSystem.IsLinux())
       {
         services.AddDbContext<AccountDbContext>(options =>
         {
-          options.UseMySql(configuration.GetConnectionString("ReportSystemAccountsLinux"));
+          var cs = configuration.GetConnectionString("ReportSystemAccountsLinux");
+          options.UseMySql(cs);
+        }
+        , ServiceLifetime.Scoped);
+        services.AddDbContext<TicketDbContext>(options =>
+        {
+          var cs = configuration.GetConnectionString("OtrsTicketsLinux");
+          options.UseMySql(cs);
+        }
+        , ServiceLifetime.Scoped);
+
+        services.AddDbContext<LoggingDbContext>(options =>
+        {
+          var cs = configuration.GetConnectionString("LoggingDbLinux");
+          options.UseMySql(cs);
         }
         , ServiceLifetime.Scoped);
       }

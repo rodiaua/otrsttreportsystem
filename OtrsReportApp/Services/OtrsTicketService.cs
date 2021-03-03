@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using OtrsReportApp.Models;
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using AutoMapper;
 using OtrsReportApp.Models.DTO;
@@ -16,6 +15,12 @@ using AutoMapper.Internal;
 using OtrsReportApp.Data;
 using System.Runtime.CompilerServices;
 using OtrsReportApp.Models.OtrsTicket;
+using OtrsReportApp.Constants;
+using static OtrsReportApp.Constants.ArticleConstants;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
+using LinqKit;
+using OtrsReportApp.Models.Logging;
 
 namespace OtrsReportApp.Services
 {
@@ -31,7 +36,7 @@ namespace OtrsReportApp.Services
     }
 
 
-    private Dictionary<long, Dictionary<string,string>> GetTTDynamicFieldsBulk(IEnumerable<long> ids)
+    private Dictionary<long, Dictionary<string, string>> GetTTDynamicFieldsBulk(IEnumerable<long> ids)
     {
       using (var scope = _scopeFactory.CreateScope())
       {
@@ -64,7 +69,8 @@ namespace OtrsReportApp.Services
                 if (configs.ContainsKey(dfValue.ValueText))
                   result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), configs.First(p => p.Key.Equals(dfValue.ValueText)).Value);
                 else result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), dfValue.ValueText);
-              }else if(dfValue.ValueDate != null)
+              }
+              else if (dfValue.ValueDate != null)
               {
                 result.TryAdd("CloseTime", dfValue.ValueDate.ToString());
               }
@@ -123,7 +129,7 @@ namespace OtrsReportApp.Services
           {
             foreach (var field in dFields)
             {
-              typeof(TicketReportDTO).GetProperty(field.Key)?.SetValue(ticketReportDTO, !field.Key.Equals("CloseTime") ? field.Value: DateTime.Parse(field.Value));
+              typeof(TicketReportDTO).GetProperty(field.Key)?.SetValue(ticketReportDTO, !field.Key.Equals("CloseTime") ? field.Value : DateTime.Parse(field.Value));
             }
           }
           if (IsTicketDTOValid(ticketReportDTO, filters)) ticketReportDTOs.Add(ticketReportDTO);
@@ -134,7 +140,7 @@ namespace OtrsReportApp.Services
           ticketReportDTOs = ticketReportDTOs.OrderByDescending(ticket => ticket.CreateTime),
           filteringItems = filteringItems
         };
-        
+
       }
     }
 
@@ -158,7 +164,8 @@ namespace OtrsReportApp.Services
           }
         }
         Dictionary<string, string> result = new Dictionary<string, string>();
-        if(configs.Count > 0) {
+        if (configs.Count > 0)
+        {
           foreach (var dfValue in dynamicFieldsValues)
           {
             if (dfValue.ValueText != null)
@@ -196,7 +203,7 @@ namespace OtrsReportApp.Services
           ticketReportDTO.Client = ticket.CustomerId;
           ticketReportDTO.TicketPriority = ticket.TicketPriority.Name;
           var dFields = GetTTDynamicFields(ticket.Id);
-          if(dFields.Count > 0)
+          if (dFields.Count > 0)
           {
             foreach (var field in dFields)
             {
@@ -324,7 +331,8 @@ namespace OtrsReportApp.Services
       }
     }
 
-    public FileStreamResult DownloadReport(Filters filters) {
+    public FileStreamResult DownloadReport(Filters filters)
+    {
       var report = GetFilteredTicketsReportBulk(filters).ticketReportDTOs;
       using (var workbook = new XLWorkbook())
       {
@@ -370,72 +378,117 @@ namespace OtrsReportApp.Services
       }
     }
 
+    private bool TicketIsPending(ICollection<Article> articles, AcknowledgedTicket acknowledgedTicket = null)
+    {
+      var externalEMailes = articles
+        .Where(a => a.ArticleTypeId == (short)ArticleType.ExternalEmail && a.ArticleSenderTypeId == (short)ArticalSenderType.Customer)
+        .OrderByDescending(a => a.CreateTime);
+      var agentAnswers = articles
+        .Where(a => a.ArticleTypeId == (short)ArticleType.ExternalEmail && a.ArticleSenderTypeId == (short)ArticalSenderType.Agent)
+        .OrderByDescending(a => a.CreateTime);
 
-    public IEnumerable<OtrsTicketDTO> GetPendingTickets()
+      if (externalEMailes.Count() > 0)
+      {
+        if (agentAnswers?.Count() < 2) return true;
+        else if (externalEMailes?.First().CreateTime > agentAnswers?.First().CreateTime)
+        {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    public async Task<IEnumerable<OtrsTicketDTO>> GetPendingTickets()
     {
       using (var scope = _scopeFactory.CreateScope())
       {
         using (var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
         {
-          var ackTickets = GetAcknowledgedTickets().Select(x => x.Id);
-          var result = (from t in context.Ticket
-                       where t.CreateTime > DateTime.Now.Date && !ackTickets.Contains(t.Id)
-                       select t).ToList();
-          if (result.Count() > 0)
+          var ackTicketsIds =  (await GetAcknowledgedTickets()).Select(x => x.Id);
+
+          var result = await context.Ticket.AsSplitQuery().Where(tt => tt.TicketStateId == (short)State.Open && tt.QueueId != (int)TicketQueue.Trash &&
+          context.DynamicFieldValue.AsSplitQuery().
+                        Where(dfv => dfv.ValueText.Equals("NationalKey")).Select(dfv => dfv.ObjectId).Contains(tt.Id)
+                        && !ackTicketsIds.Contains(tt.Id)).Where(tt => context.DynamicFieldValue.AsSplitQuery().
+                        Where(dfv => dfv.ValueText.Equals("ClientKey")).Select(dfv => dfv.ObjectId).Contains(tt.Id))
+                        .Include(tt => tt.Article).AsSplitQuery().ToListAsync();
+
+          return result.Where(tt => TicketIsPending(tt.Article)).Select(t =>
           {
-            foreach (var t in result)
+            return new OtrsTicketDTO()
             {
-              yield return new OtrsTicketDTO() { Id = t.Id, Tn = t.Tn, Title = t.Title};
-            }
-          }
-          else yield break;
+              Id = t.Id,
+              Tn = t.Tn,
+              Title = t.Title,
+              CreateTime = t.Article.
+              Where(a => a.ArticleTypeId == (short)ArticleType.ExternalEmail && a.ArticleSenderTypeId == (short)ArticalSenderType.Customer)
+              .Select(a => a.CreateTime)
+              .OrderByDescending(a => a)
+              .First()
+              .ToUniversalTime()
+            };
+          }).OrderByDescending(x => x.CreateTime); ;
         }
       }
     }
 
-    public IEnumerable<OtrsTicketDTO> GetTickets()
+    public async Task<List<OtrsTicketDTO>> GetTickets(List<long> ids)
     {
       using (var scope = _scopeFactory.CreateScope())
       {
         using (var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
         {
-          var result = from t in context.Ticket
-                       where t.CreateTime > DateTime.Now.Date 
-                       select t;
-          foreach (var t in result)
+          var result = await context.Ticket.AsSplitQuery().Where(t => ids.Contains(t.Id)).Include(t => t.Article).AsSplitQuery().ToListAsync();
+
+          return result.Select(t =>
           {
-            yield return new OtrsTicketDTO() { Id = t.Id, Tn = t.Tn, Title = t.Title };
-          }
+            return new OtrsTicketDTO()
+            {
+              Id = t.Id,
+              Tn = t.Tn,
+              Title = t.Title,
+              CreateTime = t.Article.
+              Where(a => a.ArticleTypeId == (short)ArticleType.ExternalEmail && a.ArticleSenderTypeId == (short)ArticalSenderType.Customer)
+              .Select(a => a.CreateTime)
+              .OrderByDescending(a => a)
+              .First()
+              .ToUniversalTime()
+            };
+          }).OrderByDescending(x => x.CreateTime).ToList();
         }
       }
     }
 
-    public IEnumerable<OtrsTicketDTO> GetTickets(List<long> ids)
+    public async Task<IEnumerable<long>> GetClosedTicketIds(IEnumerable<long> ids)
     {
       using (var scope = _scopeFactory.CreateScope())
       {
         using (var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
         {
-          var result = from t in context.Ticket
-                       where ids.Contains(t.Id)
-                       select t;
-          foreach (var t in result)
-          {
-            yield return new OtrsTicketDTO() { Id = t.Id, Tn = t.Tn, Title = t.Title };
-          }
+          return await context.Ticket.Where(t => t.TicketStateId == (int)State.Closed && ids.Contains(t.Id)).Select(t => t.Id).ToListAsync();
         }
       }
     }
 
-    public IEnumerable<OtrsTicketDTO> GetAcknowledgedTickets()
+    public async Task<IEnumerable<OtrsTicketDTO>> GetAcknowledgedTickets()
     {
       using (var scope = _scopeFactory.CreateScope())
       {
         using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
         {
-          var ids = from t in context.AcknowledgedTicket
-                       select t.TicketId;
-         return GetTickets(ids.ToList());
+          var acknowledgedTickets = (from t in context.AcknowledgedTicket
+                                           select t).ToList();
+          var closedTtIds = await GetClosedTicketIds(acknowledgedTickets.Select(s => s.TicketId));
+
+          if (closedTtIds.Count() > 0)
+          {
+            var closedAckTts = acknowledgedTickets.Where(t => closedTtIds.Contains(t.TicketId));
+            context.AcknowledgedTicket.RemoveRange(closedAckTts);
+            await context.SaveChangesAsync();
+            return await GetTickets(acknowledgedTickets.Where(t => !closedTtIds.Contains(t.TicketId)).Select(t => t.TicketId).ToList());
+          }
+          return await GetTickets(acknowledgedTickets.Select(t => t.TicketId).ToList());
+
         }
       }
     }
@@ -447,8 +500,8 @@ namespace OtrsReportApp.Services
         using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
         {
           var acknowledgedTicket = from t in context.AcknowledgedTicket
-                    where t.TicketId == id
-                    select t;
+                                   where t.TicketId == id
+                                   select t;
           return acknowledgedTicket.FirstOrDefault();
         }
       }
@@ -468,15 +521,15 @@ namespace OtrsReportApp.Services
       }
     }
 
-    public async Task<List<OtrsTicketDTO>> SaveAcknowledgedTickets(IEnumerable<long> ids)
+    public async Task<List<OtrsTicketDTO>> SaveAcknowledgedTickets(IEnumerable<AcknowledgedTicket> acknowledgedTickets)
     {
       using (var scope = _scopeFactory.CreateScope())
       {
         using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
         {
-          context.AcknowledgedTicket.AddRange(ids.Select(x=> { return new AcknowledgedTicket() { TicketId = x }; }));
+          context.AcknowledgedTicket.AddRange(acknowledgedTickets);
           await context.SaveChangesAsync();
-          return GetTickets(ids.ToList()).ToList();
+          return await GetTickets(acknowledgedTickets.Select(t => t.TicketId).ToList()); 
         }
       }
     }
@@ -489,7 +542,7 @@ namespace OtrsReportApp.Services
         {
           context.AcknowledgedTicket.Remove(GetAcknowledgedTickets(id));
           await context.SaveChangesAsync();
-          return GetTickets(new long[] {id}.ToList()).FirstOrDefault();
+          return (await GetTickets(new long[] { id }.ToList())).FirstOrDefault();
         }
       }
     }
@@ -502,7 +555,18 @@ namespace OtrsReportApp.Services
         {
           context.AcknowledgedTicket.RemoveRange(GetAcknowledgedTickets(ids));
           await context.SaveChangesAsync();
-          return GetTickets(ids.ToList()).ToList();
+          return await GetTickets(ids.ToList()); 
+        }
+      }
+    }
+
+    public List<LogItem> GetPendingTicketLogs()
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<LoggingDbContext>())
+        {
+          return context.LogItem.OrderByDescending(log => log.Time).ToList();
         }
       }
     }

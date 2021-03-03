@@ -1,29 +1,47 @@
-
-    <div style="margin-top: 10px;">
-        <p-tabView (onChange)="onChangeHandle($event)">
-            <p-tabPanel header="Pending Tickets">
-                <div class="card">
-                    <div class=" card-body">
-                        <p-pickList [source]="list1" [target]="list2" sourceHeader="Pending Tickets" targetHeader="Acknowledged Tickets"
-                        [dragdrop]="false" [sourceStyle]="{'max-height':'700px'}" [targetStyle]="{'max-height':'700px'}" [showSourceControls]="false" [showTargetControls]="false"
+<div style="margin-top: 10px;">
+    <p-tabView (onChange)="onChangeHandle($event)">
+        <p-tabPanel header="Pending Tickets">
+            <div class="card">
+                <div class=" card-body">
+                    <p-pickList [source]="list1" [target]="list2" sourceHeader="Pending Tickets"
+                        targetHeader="Acknowledged Tickets" [dragdrop]="false" [sourceStyle]="{'max-height':'700px'}"
+                        [targetStyle]="{'max-height':'700px'}" [showSourceControls]="false" [showTargetControls]="false"
                         (onMoveToTarget)="onMoveToTargetHandle($event)" (onMoveToSource)="onMoveToSourceHandle($event)"
-                         (onMoveAllToTarget)="onMoveAllToTargetHandle($event)"
-                         (onMoveAllToSource)="onMoveAllToSourceHandle($event)">  
+                        (onMoveAllToTarget)="onMoveAllToTargetHandle($event)"
+                        (onMoveAllToSource)="onMoveAllToSourceHandle($event)">
                         <ng-template let-tt pTemplate="item">
                             <div>
-                                <p style="font-size:15px;">{{tt.tn}}</p>
-                                <p>{{tt.title}}</p>
+                                <a>[TT#{{tt.tn}}] {{tt.title}}</a>
+                            </div>
+                            <div style="margin-top: 1rem; display: flex;">
+                                <a>{{isoTimeToDateTime(tt.createTime)}}</a>
+                                <div class="ml-auto">
+                                    <p-tag severity="{{getSeverity(tt)}}">Overdue: {{getTicketOverdueInMinutes(tt)}}
+                                        minutes</p-tag>
+                                </div>
                             </div>
                         </ng-template>
                     </p-pickList>
+                </div>
+            </div>
+        </p-tabPanel>
+        <p-tabPanel header="Logs">
+            <div class="card">
+                <div class=" card-body">
+                    <div style="align-self: center;">
+                        <div class="p-inputgroup" style="margin-bottom: 10px;">
+                            <input [(ngModel)]="searchPattern" type="text" style="width:100%" pInputText
+                                placeholder="Search" (ngModelChange)="searchModelChange($event)">
+                            <span class="p-inputgroup-addon"><i class="pi pi-search"></i></span>
+                        </div>
+                        <p-scrollPanel [style]="{width: '100%', height: '500px'}" styleClass="bluebar">
+                            <ng-container *ngFor="let item of logs">
+                                <p>{{item}}</p>
+                            </ng-container>
+                        </p-scrollPanel>
                     </div>
                 </div>
-            </p-tabPanel>
-            <p-tabPanel header="Logs">
-                {{logs}}
-            </p-tabPanel>
-        </p-tabView>
-    </div>
-    
-    
-
+            </div>
+        </p-tabPanel>
+    </p-tabView>
+</div>
