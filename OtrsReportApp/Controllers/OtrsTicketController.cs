@@ -8,6 +8,18 @@ using System.Threading.Tasks;
 using OtrsReportApp.Models.DTO;
 using System.IO;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Identity;
+using OtrsReportApp.Models.Account;
+using System.Text;
+using OtrsReportApp.Data.Logging;
+using System.Security.Claims;
+using Org.BouncyCastle.Asn1.Cmp;
+using Microsoft.AspNetCore.SignalR;
+using OtrsReportApp.Services.LoggingHubService;
+using OtrsReportApp.Models.Logging;
+using OtrsReportApp.Models.OtrsTicket;
+using Newtonsoft.Json;
 
 namespace OtrsReportApp.Controllers
 {
@@ -16,10 +28,15 @@ namespace OtrsReportApp.Controllers
   public class OtrsTicketController: Controller
   {
    private readonly OtrsTicketService _otrsServcie;
+    private readonly Logger _logger;
+    private UserManager<AccountUser> _userManager;
+    
 
-    public OtrsTicketController(OtrsTicketService otrs)
+    public OtrsTicketController(OtrsTicketService otrs, Logger logger, UserManager<AccountUser> userManager)
     {
       _otrsServcie = otrs;
+      _logger = logger;
+      _userManager = userManager;
     }
 
     //[HttpPost("[action]")]
@@ -76,38 +93,66 @@ namespace OtrsReportApp.Controllers
 
     [HttpGet("[action]")]
     [Authorize(Roles = "Admin,User")]
-    public IEnumerable<object> GetPendingTickets()
+    public async Task<IEnumerable<OtrsTicketDTO>> GetPendingTickets()
     {
-      return _otrsServcie.GetPendingTickets();
+      return  await _otrsServcie.GetPendingTickets();
     }
 
     [HttpGet("[action]")]
     [Authorize(Roles = "Admin,User")]
-    public IEnumerable<object> GetAcknowledgedTickets()
+    public async Task<IEnumerable<OtrsTicketDTO>> GetAcknowledgedTickets()
     {
-      return _otrsServcie.GetAcknowledgedTickets();
+      return await _otrsServcie.GetAcknowledgedTickets();
     }
 
     [HttpPost("[action]")]
     [Authorize(Roles = "Admin,User")]
-    public async Task SaveAcknowledgedTickets([FromBody] IEnumerable<long> ids)
+    public async Task SaveAcknowledgedTickets([FromBody] IEnumerable<AcknowledgedTicket> acknowledgedTickets)
     {
-      await _otrsServcie.SaveAcknowledgedTickets(ids);
+      await InitializeUserForLogging();
+      var result = await _otrsServcie.SaveAcknowledgedTickets(acknowledgedTickets);
+      foreach(var x in result)
+      {
+        await _logger.Log($"Acknowlaged [TT#{x.Tn}] {x.Title}");
+      }
     }
 
     [HttpPost("[action]")]
     [Authorize(Roles = "Admin,User")]
     public async Task RemoveAcknowledgedTickets([FromBody] IEnumerable<long> ids)
     {
-      if(ids.Count() == 1)
+      await InitializeUserForLogging();
+      if (ids.Count() == 1)
       {
-        await _otrsServcie.RemoveAcknowledgedTickets(ids.First());
+        var result = await _otrsServcie.RemoveAcknowledgedTickets(ids.First());
+        await _logger.Log($"Undo acknowlagment of [TT#{result.Tn}] {result.Title}");
       }
       else
       {
-        await _otrsServcie.RemoveAcknowledgedTickets(ids);
+        var result = await _otrsServcie.RemoveAcknowledgedTickets(ids);
+        foreach (var x in result)
+        {
+          await _logger.Log($"Undo acknowlagment of [TT#{x.Tn}] {x.Title}");
+        }
       }
     }
+
+    [HttpGet("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public List<LogItem> GetPendingTicketLogs()
+    {
+      return _otrsServcie.GetPendingTicketLogs();
+    }
+
+    private async Task InitializeUserForLogging()
+    {
+      
+      var userId = User.Claims.First(c => c.Type.Equals("userId")).Value;
+      var user = await _userManager.FindByIdAsync(userId);
+      _logger.User = user != null ? user : throw new Exception("Not authorized\r\n"+JsonConvert.SerializeObject(User.Claims));
+    }
+
+    
 
   }
 }

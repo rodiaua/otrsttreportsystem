@@ -16,3 +16,11 @@ td {
 :host ::ng-deep .p-paginator{
     border: 0px;
 }
+
+td{
+    word-break:break-word;
+}
+
+:host ::ng-deep .p-multiselect-panel.p-component[ng-reflect-ng-class="p-multiselect-panel p-componen"]{
+    min-width: 20rem;
+}
