@@ -22,7 +22,7 @@ import {PickListModule} from 'primeng/picklist';
 import {TabViewModule} from 'primeng/tabview';
 import { TagModule } from 'primeng/tag';
 import {ScrollPanelModule} from 'primeng/scrollpanel';
-
+import {ProgressBarModule} from 'primeng/progressbar';
 
 
 import { AppRoutingModule } from './app-routing.module';
@@ -40,6 +40,8 @@ import { ResetPasswordComponent } from './user/reset-password/reset-password.com
 import { TwoFactorAuthenticationComponent } from './login/two-factor-authentication/two-factor-authentication.component';
 import { ReportCreatorComponent } from './report-creator/report-creator.component';
 import { PendingTicketsComponent } from './pending-tickets/pending-tickets.component';
+import { PendedTicketComponent } from './pended-ticket/pended-ticket.component';
+import { NgxDaterangepickerMd } from 'ngx-daterangepicker-material';
 
 
 @NgModule({
@@ -56,9 +58,11 @@ import { PendingTicketsComponent } from './pending-tickets/pending-tickets.compo
     ResetPasswordComponent,
     TwoFactorAuthenticationComponent,
     ReportCreatorComponent,
-    PendingTicketsComponent
+    PendingTicketsComponent,
+    PendedTicketComponent
   ],
   imports: [
+    ProgressBarModule,
     ScrollPanelModule,
     TagModule,
     TabViewModule,
@@ -80,7 +84,8 @@ import { PendingTicketsComponent } from './pending-tickets/pending-tickets.compo
     PasswordModule,
     ToastModule,
     CheckboxModule,
-    DynamicDialogModule
+    DynamicDialogModule,
+    NgxDaterangepickerMd.forRoot()
   ],
   providers: [UserService,
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },

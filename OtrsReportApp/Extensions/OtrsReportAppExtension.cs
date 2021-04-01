@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OtrsReportApp.Data;
 using OtrsReportApp.Models;
+using OtrsReportApp.Models.OtrsTicket;
 using OtrsReportApp.Services.EmailService;
 using System;
 using System.Collections.Generic;

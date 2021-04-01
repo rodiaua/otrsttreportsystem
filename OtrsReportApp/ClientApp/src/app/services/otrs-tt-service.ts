@@ -9,6 +9,7 @@ import { Report } from '../models/dto/report';
 import { LogItem } from "../models/log-item";
 import {OtrsTicket} from "../models/otrs-ticket";
 import { AcknowledgedTicket } from "../models/acknowledgedTicket";
+import {PendedTicket} from "../models/pended-ticket"
 
 
 @Injectable({ providedIn: 'root' })
@@ -55,6 +56,14 @@ export class OtrsTTService{
 
     getPendingTicketLogs(){
         return this.http.get<LogItem[]>(`${this.domain}/getPendingTicketLogs`).toPromise();
+    }
+
+    savePendedTicket(ticketId:number, overdue: number){
+        return this.http.post(`${this.domain}/savePendedTicket`,{id:0, ticketId, overdue}).toPromise();
+    }
+
+    getPendedTickets(period: Period){
+        return this.http.post<PendedTicket[]>(`${this.domain}/getPendedTickets`,period).toPromise();
     }
 
 
