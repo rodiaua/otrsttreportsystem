@@ -1,6 +1,6 @@
 <p-toast></p-toast>
 <div class="p-field p-col-12 p-md-4">
-    <label for="buttonbar" style="display: block;">Period</label>
+    <label for="buttonbar" style="display: table-cell;">Period</label>
     <p-calendar name="calendar" [monthNavigator]="true" [yearNavigator]="true" yearRange="2000:2050" [(ngModel)]="time"
         [showIcon]="true" [showTime]="true" selectionMode="range" [readonlyInput]="true" dateFormat="yy.mm.dd"
         inputId="buttonbar" [inputStyle]="{'width':'270px'}">
@@ -34,6 +34,7 @@
             <th>Initiator</th>
             <th>Direction</th>
             <th>National/ <br> International</th>
+            <th>Category</th>
             <th>Priority</th>
             <th>State</th>
             <th>Close Time</th>
@@ -79,6 +80,13 @@
                 </p-multiSelect>
             </th>
             <th>
+                <p-multiSelect [(ngModel)]="selectedCategories" [options]="categories" placeholder="All">
+                    <ng-template let-type pTemplate="item">
+                        {{type.label}}
+                    </ng-template>
+                </p-multiSelect>
+            </th>
+            <th>
                 <p-multiSelect [(ngModel)]="selectedPriorities" [options]="priorities" placeholder="All">
                     <ng-template let-type pTemplate="item">
                         {{type.label}}
@@ -107,6 +115,7 @@
             <td>{{rowData.initiator}}</td>
             <td>{{rowData.direction}}</td>
             <td>{{rowData.natInt}}</td>
+            <td>{{rowData.category}}</td>
             <td>{{rowData.ticketPriority}}</td>
             <td>{{rowData.state}}</td>
             <td>{{epochToString(rowData.closeTime)}}</td>

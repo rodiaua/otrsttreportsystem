@@ -7,6 +7,7 @@ export interface TicketReport {
     description: string,
     direction: string,
     natInt: string,
+    category: string,
     state: string,
     initiator: string,
     ticketPriority: string,

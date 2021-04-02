@@ -18,6 +18,7 @@ namespace OtrsReportApp.Models.DTO
     public string Description { get; set; }
     public string Direction { get; set; }
     public string NatInt { get; set; }
+    public string Category { get; set; }
     public string State { get; set; }
     public string Initiator { get; set; }
     public string TicketPriority { get; set; }

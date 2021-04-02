@@ -36,6 +36,7 @@ export class TtReportComponent implements OnInit {
   natInts: SelectItem[];
   priorities: SelectItem[];
   states: SelectItem[];
+  categories: SelectItem[];
 
   selectedZones: SelectItem[];
   selectedTypes: SelectItem[];
@@ -44,6 +45,7 @@ export class TtReportComponent implements OnInit {
   selectedNatInts: SelectItem[];
   selectedPriorities: SelectItem[];
   selectedStates: SelectItem[];
+  selectedCategories: SelectItem[];
 
 
 
@@ -61,6 +63,7 @@ export class TtReportComponent implements OnInit {
     this.natInts = [];
     this.priorities = [];
     this.states = [];
+    this.categories = [];
   }
 
   epochToString(epochTime: number) {
@@ -107,6 +110,7 @@ export class TtReportComponent implements OnInit {
       filteringItems.initiators?.length < 1 ? this.selectedInitiators = this.initiators = [] : this.initiators = filteringItems.initiators;
       filteringItems.natInts?.length < 1 ? this.selectedNatInts = this.natInts = [] : this.natInts = filteringItems.natInts;
       filteringItems.directions?.length < 1 ? this.selectedDirections = this.directions = [] : this.directions = filteringItems.directions;
+      filteringItems.categories?.length < 1 ? this.selectedCategories = this.categories = [] : this.categories = filteringItems.categories;
       }
       this.loadingData = false;
     }
@@ -123,6 +127,7 @@ export class TtReportComponent implements OnInit {
       initiators: this.selectedInitiators?.map(initiator => initiator),
       natInts: this.selectedNatInts?.map(natInt => natInt),
       priorities: this.selectedPriorities?.map(priority => priority),
+      categories: this.selectedCategories?.map(category => category)
     }
   }
 

@@ -8,6 +8,7 @@ export interface PendedTicket{
     description: string,
     direction: string,
     natInt: string,
+    category: string,
     state: string,
     initiator: string,
     ticketPriority: string,

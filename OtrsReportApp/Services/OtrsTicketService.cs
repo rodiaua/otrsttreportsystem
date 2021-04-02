@@ -21,6 +21,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using LinqKit;
 using OtrsReportApp.Models.Logging;
+using Microsoft.AspNetCore.Http.Connections;
 
 namespace OtrsReportApp.Services
 {
@@ -107,6 +108,8 @@ namespace OtrsReportApp.Services
         var direction = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Direction").Distinct().ToList();
         var natInt = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("NatInt").Distinct().ToList();
         var initiator = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Initiator").Distinct().ToList();
+        var category = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Category").Distinct().ToList();
+
 
         filteringItems.States = tickets.Select(ticket => ticket.TicketState.Name).Distinct().OrderByDescending(state => state).toSelectItems();
         filteringItems.TicketPriorities = tickets.Select(ticket => ticket.TicketPriority.Name).Distinct().OrderByDescending(ticketPriority => ticketPriority).toSelectItems();
@@ -115,6 +118,7 @@ namespace OtrsReportApp.Services
         filteringItems.Directions = direction.Count > 0 ? direction.toSelectItems() : null;
         filteringItems.NatInts = natInt.Count > 0 ? natInt.toSelectItems() : null;
         filteringItems.Initiators = initiator.Count > 0 ? initiator.toSelectItems() : null;
+        filteringItems.Categories = category.Count > 0 ? category.toSelectItems() : null;
 
         foreach (var ticket in tickets)
         {
@@ -216,6 +220,7 @@ namespace OtrsReportApp.Services
       }
     }
 
+    //Category
     private bool IsTicketDTOValid(TicketReportDTO ticket, Filters filters)
     {
       var zones = filters.Zones;
@@ -225,6 +230,7 @@ namespace OtrsReportApp.Services
       var natInts = filters.NatInts;
       var priorities = filters.Priorities;
       var directions = filters.Directions;
+      var catogories = filters.Categories;
 
       if (zones != null && zones.Length > 0 && zones.Contains(ticket.Zone) == false) return false;
       if (types != null && types.Length > 0 && types.Contains(ticket.Type) == false) return false;
@@ -233,9 +239,11 @@ namespace OtrsReportApp.Services
       if (natInts != null && natInts.Length > 0 && natInts.Contains(ticket.NatInt) == false) return false;
       if (priorities != null && priorities.Length > 0 && priorities.Contains(ticket.TicketPriority) == false) return false;
       if (directions != null && directions.Length > 0 && directions.Contains(ticket.Direction) == false) return false;
+      if (catogories != null && catogories.Length > 0 && catogories.Contains(ticket.Category) == false) return false;
       return true;
     }
 
+    //Category
     public FilteringItems GetFilteringItems(Period period)
     {
       using (var scope = _scopeFactory.CreateScope())
@@ -257,6 +265,7 @@ namespace OtrsReportApp.Services
         var directions = new List<string>();
         var natInts = new List<string>();
         var initiators = new List<string>();
+        var categories = new List<string>();
         foreach (var ticket in tickets)
         {
           var dfields = GetTTDynamicFields(ticket.Id);
@@ -267,6 +276,7 @@ namespace OtrsReportApp.Services
             if (dfields.ContainsKey("Direction") && !String.IsNullOrEmpty(dfields["Direction"])) directions.Add(dfields["Direction"]);
             if (dfields.ContainsKey("NatInt") && !String.IsNullOrEmpty(dfields["NatInt"])) natInts.Add(dfields["NatInt"]);
             if (dfields.ContainsKey("Initiator") && !String.IsNullOrEmpty(dfields["Initiator"])) initiators.Add(dfields["Initiator"]);
+            if (dfields.ContainsKey("Category") && !String.IsNullOrEmpty(dfields["Category"])) initiators.Add(dfields["Category"]);
           }
         }
         var filteringItems = new FilteringItems()
@@ -277,7 +287,8 @@ namespace OtrsReportApp.Services
           Zones = zones.Distinct().OrderByDescending(name => name).toSelectItems(),
           NatInts = natInts.Distinct().OrderByDescending(name => name).toSelectItems(),
           States = states,
-          TicketPriorities = priorities
+          TicketPriorities = priorities,
+          Categories = categories.Distinct().OrderByDescending(name => name).toSelectItems()
         };
         return filteringItems;
       }
@@ -347,9 +358,10 @@ namespace OtrsReportApp.Services
         worksheet.Cell(currentRow, 7).Value = "Initiator";
         worksheet.Cell(currentRow, 8).Value = "Direction";
         worksheet.Cell(currentRow, 9).Value = "National/International";
-        worksheet.Cell(currentRow, 10).Value = "Priority";
-        worksheet.Cell(currentRow, 11).Value = "State";
-        worksheet.Cell(currentRow, 12).Value = "Close Time";
+        worksheet.Cell(currentRow, 10).Value = "Category";
+        worksheet.Cell(currentRow, 11).Value = "Priority";
+        worksheet.Cell(currentRow, 12).Value = "State";
+        worksheet.Cell(currentRow, 13).Value = "Close Time";
 
 
         foreach (var item in report)
@@ -365,9 +377,10 @@ namespace OtrsReportApp.Services
           worksheet.Cell(currentRow, 7).Value = item.Initiator;
           worksheet.Cell(currentRow, 8).Value = item.Direction;
           worksheet.Cell(currentRow, 9).Value = item.NatInt;
-          worksheet.Cell(currentRow, 10).Value = item.TicketPriority;
-          worksheet.Cell(currentRow, 11).Value = item.State;
-          worksheet.Cell(currentRow, 12).Value = item.CloseTime;
+          worksheet.Cell(currentRow, 10).Value = item.Category;
+          worksheet.Cell(currentRow, 11).Value = item.TicketPriority;
+          worksheet.Cell(currentRow, 12).Value = item.State;
+          worksheet.Cell(currentRow, 13).Value = item.CloseTime;
         }
 
 
@@ -662,6 +675,7 @@ namespace OtrsReportApp.Services
                   Description = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("DescriptionKey"))?.ValueText.Replace("Key", ""),
                   Direction = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("DirectionKey"))?.ValueText.Replace("Key", ""),
                   NatInt = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("NatIntKey"))?.ValueText.Replace("Key", ""),
+                  Category = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("CategoryKey"))?.ValueText.Replace("Key", ""),
                   Initiator = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("InitiatorKey"))?.ValueText.Replace("Key", ""),
                   TicketPriority = t.TicketPriority.Name,
                   State = t.TicketState.Name,
