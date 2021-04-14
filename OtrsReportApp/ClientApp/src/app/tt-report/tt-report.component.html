@@ -28,6 +28,7 @@
             <th style=" width: 9em">TN</th>
             <th>Create Time</th>
             <th style=" width: 8em;">Client</th>
+            <th>Problem Side</th>
             <th>Zone</th>
             <th>Type</th>
             <th>Description</th>
@@ -40,10 +41,13 @@
             <th>Close Time</th>
         </tr>
         <tr>
-            <th>
-            </th>
+            <th></th>
+            <th></th>
             <th></th>
             <th>
+                <p-multiSelect [(ngModel)]="selectedProblemSides" [options]="problemSides" placeholder="All">
+                    <ng-template let-problemSide pTemplate="item">{{problemSide.label}}</ng-template>
+                </p-multiSelect>
             </th>
             <th>
                 <p-multiSelect [(ngModel)]="selectedZones" [options]="zones" placeholder="All">
@@ -109,6 +113,7 @@
             <td>{{rowData.tn}}</td>
             <td>{{epochToString(rowData.createTime)}}</td>
             <td>{{rowData.client}}</td>
+            <td>{{rowData.problemSide}}</td>
             <td>{{rowData.zone}}</td>
             <td>{{rowData.type}}</td>
             <td>{{rowData.description}}</td>

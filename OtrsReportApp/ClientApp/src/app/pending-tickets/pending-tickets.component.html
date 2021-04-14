@@ -2,6 +2,9 @@
     <p-tabView (onChange)="onChangeHandle($event)">
         <p-tabPanel header="Pending Tickets">
             <div class="card">
+                <div class="card-header">
+                    <p-selectButton [options]="" [(ngModel)]="selectedCity" optionLabel="name"></p-selectButton>
+                </div>
                 <div class=" card-body">
                     <p-pickList [source]="list1" [target]="list2" sourceHeader="Pending Tickets"
                         targetHeader="Acknowledged Tickets" [dragdrop]="false" [sourceStyle]="{'max-height':'700px'}"

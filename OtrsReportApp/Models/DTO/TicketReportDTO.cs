@@ -13,6 +13,7 @@ namespace OtrsReportApp.Models.DTO
     [JsonConverter(typeof(EpochConverter))]
     public DateTime CreateTime { get; set; }
     public string Client { get; set; }
+    public string ProblemSide { get; set; }
     public string Zone { get; set; }
     public string Type { get; set; }
     public string Description { get; set; }

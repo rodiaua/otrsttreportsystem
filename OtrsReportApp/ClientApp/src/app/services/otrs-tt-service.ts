@@ -66,5 +66,9 @@ export class OtrsTTService{
         return this.http.post<PendedTicket[]>(`${this.domain}/getPendedTickets`,period).toPromise();
     }
 
+    getPendedTicketsTotal(period: Period){
+        return this.http.post<number>(`${this.domain}/totalPendedTickets`,period).toPromise();
+    }
+
 
 }

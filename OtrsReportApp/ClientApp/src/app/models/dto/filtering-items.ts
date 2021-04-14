@@ -7,5 +7,6 @@ export interface FilteringItems{
     states: SelectItem[],
     initiators: SelectItem[],
     ticketPriorities: SelectItem[],
-    categories: SelectItem[]
+    categories: SelectItem[],
+    problemSides: SelectItem[]
 }

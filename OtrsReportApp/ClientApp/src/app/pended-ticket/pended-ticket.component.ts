@@ -17,6 +17,7 @@ export class PendedTicketComponent implements OnInit {
   timeRange: { startDate: Moment, endDate: Moment } = {startDate: moment().startOf('day'), endDate:moment() };
 
   loadingInProcess: boolean = false;
+  totalTickets: number;
 
   ranges: any = {
     'Today': [moment().startOf('day'), moment()],
@@ -45,6 +46,9 @@ export class PendedTicketComponent implements OnInit {
 
   async getPendedTickets(){
     this.loadingInProcess = true;
+    this.totalTickets = await this.otrsService.getPendedTicketsTotal({
+      startTime: this.timeRange.startDate.unix(),
+       endTime:  this.timeRange.endDate.unix()});
       this.pendedTickets = await this.otrsService.getPendedTickets({
         startTime: this.timeRange.startDate.unix(),
          endTime:  this.timeRange.endDate.unix()}).finally(()=> {this.loadingInProcess = false});

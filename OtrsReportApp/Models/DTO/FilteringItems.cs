@@ -15,6 +15,7 @@ namespace OtrsReportApp.Models.DTO
     public IEnumerable<SelectItem> Initiators { get; set; }
     public IEnumerable<SelectItem> TicketPriorities { get; set; }
     public IEnumerable<SelectItem> Categories { get; set; }
+    public IEnumerable<SelectItem> ProblemSides { get; set; }
 
   }
 }

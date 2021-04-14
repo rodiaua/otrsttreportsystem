@@ -25,6 +25,11 @@ export class PendingTicketsComponent implements OnInit, OnDestroy {
   loadDataInBackground = true;
   searchPattern = "";
   pendedTicketsOpened = false;
+  
+  #error add NAT int
+  // trafficTapes = {
+  //   name: 
+  // }
 
   constructor(private otrsService: OtrsTTService, private logService: LoggingHubService) { }
   ngOnDestroy(): void {

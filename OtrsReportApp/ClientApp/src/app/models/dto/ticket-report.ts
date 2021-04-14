@@ -2,6 +2,7 @@ export interface TicketReport {
     tn: number,
     createTime: number,
     client: string,
+    problemSide: string,
     zone: string,
     type: string,
     description: string,

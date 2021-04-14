@@ -159,5 +159,13 @@ namespace OtrsReportApp.Controllers
     {
       return await _otrsServcie.GetPendedTickets(period);
     }
+
+    [HttpPost("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public int TotalPendedTickets([FromBody] Period period)
+    {
+      return _otrsServcie.TotalPendedTickets(period);
+    }
+
   }
 }

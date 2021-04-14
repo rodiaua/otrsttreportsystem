@@ -2,25 +2,23 @@
     <div class="card">
         <p-progressBar *ngIf="loadingInProcess" mode="indeterminate" [style]="{'height': '6px'}"></p-progressBar>
         <div class="card-header">
-                <label for="calendar" style="display: table-cell;">Time Range</label>
-                <input style="width: 20rem;" id="calendar" type="text" ngxDaterangepickerMd [(ngModel)]="timeRange"
-                 timePicker24Hour="true"
-                  timePicker="true"
-                  [locale]="{format: 'DD/MM/YYYY HH:mm:ss'}"
-                  [ranges]="ranges"
-                  alwaysShowCalendars="true"
-                  autocomplete="off"
-                  (datesUpdated)="getPendedTickets()"/>
+            <label for="calendar" style="display: table-cell;">Time Range</label>
+            <input style="width: 20rem;" id="calendar" type="text" ngxDaterangepickerMd [(ngModel)]="timeRange"
+                timePicker24Hour="true" timePicker="true" [locale]="{format: 'DD/MM/YYYY HH:mm:ss'}" [ranges]="ranges"
+                alwaysShowCalendars="true" autocomplete="off" (datesUpdated)="getPendedTickets()" />
         </div>
         <div class="card-body" *ngIf="!loadingInProcess">
-            <p-table *ngIf="pendedTickets.length > 0" [value]="pendedTickets" styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" rows="20"
-             [rowsPerPageOptions]="[10,20,40]"
-             paginator="true">
+            <p-table *ngIf="pendedTickets.length > 0" [value]="pendedTickets" [totalRecords]="totalTickets"
+                styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [rows]="10" 
+                [showCurrentPageReport] = "true"
+                currentPageReportTemplate="Total records {{totalTickets}}" [rowsPerPageOptions]="[10,20,40]"
+                [paginator]="true">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Tn</th>
                         <th>Create Time</th>
                         <th>Client</th>
+                        <th>Problem Side</th>
                         <th>Zone</th>
                         <th>Type</th>
                         <th>Description</th>
@@ -37,13 +35,17 @@
                 <ng-template pTemplate="body" let-pendedTicket>
                     <tr style="font-size: 13px;">
                         <td>
-                            <a target="_blank" rel="noopener noreferrer" href="http://otrs.gmsu.ua/otrs/index.pl?Action=AgentTicketZoom;TicketID={{pendedTicket.ticketId}}">{{pendedTicket.tn}}</a>
+                            <a target="_blank" rel="noopener noreferrer"
+                                href="http://otrs.gmsu.ua/otrs/index.pl?Action=AgentTicketZoom;TicketID={{pendedTicket.ticketId}}">{{pendedTicket.tn}}</a>
                         </td>
                         <td>
                             {{epochToString(pendedTicket.createTime)}}
                         </td>
                         <td>
                             {{pendedTicket.client}}
+                        </td>
+                        <td>
+                            {{pendedTicket.problemSide}}
                         </td>
                         <td>
                             {{pendedTicket.zone}}
@@ -77,7 +79,8 @@
                             {{epochToString(pendedTicket.closeTime)}}
                         </td>
                         <td>
-                            <p-tag severity="{{getSeverity(pendedTicket.overdue)}}">{{pendedTicket.overdue>180?">180":">60"}}
+                            <p-tag severity="{{getSeverity(pendedTicket.overdue)}}">
+                                {{pendedTicket.overdue>180?">180":">60"}}
                                 minutes</p-tag>
                         </td>
                     </tr>

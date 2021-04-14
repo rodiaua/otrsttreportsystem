@@ -23,6 +23,7 @@ import {TabViewModule} from 'primeng/tabview';
 import { TagModule } from 'primeng/tag';
 import {ScrollPanelModule} from 'primeng/scrollpanel';
 import {ProgressBarModule} from 'primeng/progressbar';
+import {SelectButtonModule} from 'primeng/selectbutton';
 
 
 import { AppRoutingModule } from './app-routing.module';
@@ -62,6 +63,7 @@ import { NgxDaterangepickerMd } from 'ngx-daterangepicker-material';
     PendedTicketComponent
   ],
   imports: [
+    SelectButtonModule,
     ProgressBarModule,
     ScrollPanelModule,
     TagModule,

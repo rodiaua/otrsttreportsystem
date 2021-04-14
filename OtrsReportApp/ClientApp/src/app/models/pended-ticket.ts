@@ -3,6 +3,7 @@ export interface PendedTicket{
     tn: string,
     createTime: number,
     client: string,
+    problemSide: string,
     zone: string,
     type: string,
     description: string,

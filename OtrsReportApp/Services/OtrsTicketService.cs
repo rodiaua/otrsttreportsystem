@@ -43,7 +43,7 @@ namespace OtrsReportApp.Services
       {
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var dynamicFieldsValues = db.DynamicFieldValue.Where(fields => ids.Contains(fields.ObjectId)).Include(field => field.Field).Where(field => field.Field.Name.Contains("Key") ||
-        field.Field.Name.Equals("TicketFreeTime1")).ToList();
+        field.Field.Name.Equals("TicketFreeTime1") || field.Field.Name.Contains("TicketSide")).ToList();
 
         Dictionary<long, Dictionary<string, string>> ttsDynamicFields = new Dictionary<long, Dictionary<string, string>>();
         foreach (var id in ids)
@@ -67,7 +67,8 @@ namespace OtrsReportApp.Services
             {
               if (dfValue.ValueText != null)
               {
-                if (configs.ContainsKey(dfValue.ValueText))
+                if (dfValue.Field.Name.Equals("TicketSide")) result.TryAdd("ProblemSide", dfValue.ValueText);
+                else if (configs.ContainsKey(dfValue.ValueText))
                   result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), configs.First(p => p.Key.Equals(dfValue.ValueText)).Value);
                 else result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), dfValue.ValueText);
               }
@@ -109,6 +110,8 @@ namespace OtrsReportApp.Services
         var natInt = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("NatInt").Distinct().ToList();
         var initiator = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Initiator").Distinct().ToList();
         var category = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Category").Distinct().ToList();
+        var problemSide = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("ProblemSide").Distinct().ToList();
+
 
 
         filteringItems.States = tickets.Select(ticket => ticket.TicketState.Name).Distinct().OrderByDescending(state => state).toSelectItems();
@@ -119,6 +122,7 @@ namespace OtrsReportApp.Services
         filteringItems.NatInts = natInt.Count > 0 ? natInt.toSelectItems() : null;
         filteringItems.Initiators = initiator.Count > 0 ? initiator.toSelectItems() : null;
         filteringItems.Categories = category.Count > 0 ? category.toSelectItems() : null;
+        filteringItems.ProblemSides = problemSide.Count > 0 ? problemSide.toSelectItems() : null;
 
         foreach (var ticket in tickets)
         {
@@ -231,6 +235,7 @@ namespace OtrsReportApp.Services
       var priorities = filters.Priorities;
       var directions = filters.Directions;
       var catogories = filters.Categories;
+      var problemSides = filters.ProblemSides;
 
       if (zones != null && zones.Length > 0 && zones.Contains(ticket.Zone) == false) return false;
       if (types != null && types.Length > 0 && types.Contains(ticket.Type) == false) return false;
@@ -240,6 +245,7 @@ namespace OtrsReportApp.Services
       if (priorities != null && priorities.Length > 0 && priorities.Contains(ticket.TicketPriority) == false) return false;
       if (directions != null && directions.Length > 0 && directions.Contains(ticket.Direction) == false) return false;
       if (catogories != null && catogories.Length > 0 && catogories.Contains(ticket.Category) == false) return false;
+      if (problemSides != null && problemSides.Length > 0 && problemSides.Contains(ticket.ProblemSide) == false) return false;
       return true;
     }
 
@@ -266,6 +272,7 @@ namespace OtrsReportApp.Services
         var natInts = new List<string>();
         var initiators = new List<string>();
         var categories = new List<string>();
+        var problemSides = new List<string>();
         foreach (var ticket in tickets)
         {
           var dfields = GetTTDynamicFields(ticket.Id);
@@ -277,6 +284,7 @@ namespace OtrsReportApp.Services
             if (dfields.ContainsKey("NatInt") && !String.IsNullOrEmpty(dfields["NatInt"])) natInts.Add(dfields["NatInt"]);
             if (dfields.ContainsKey("Initiator") && !String.IsNullOrEmpty(dfields["Initiator"])) initiators.Add(dfields["Initiator"]);
             if (dfields.ContainsKey("Category") && !String.IsNullOrEmpty(dfields["Category"])) initiators.Add(dfields["Category"]);
+            if (dfields.ContainsKey("ProblemSide") && !String.IsNullOrEmpty(dfields["ProblemSide"])) initiators.Add(dfields["ProblemSide"]);
           }
         }
         var filteringItems = new FilteringItems()
@@ -288,7 +296,8 @@ namespace OtrsReportApp.Services
           NatInts = natInts.Distinct().OrderByDescending(name => name).toSelectItems(),
           States = states,
           TicketPriorities = priorities,
-          Categories = categories.Distinct().OrderByDescending(name => name).toSelectItems()
+          Categories = categories.Distinct().OrderByDescending(name => name).toSelectItems(),
+          ProblemSides = problemSides.Distinct().OrderByDescending(name => name).toSelectItems()
         };
         return filteringItems;
       }
@@ -352,16 +361,17 @@ namespace OtrsReportApp.Services
         worksheet.Cell(currentRow, 1).Value = "TN";
         worksheet.Cell(currentRow, 2).Value = "Create Time";
         worksheet.Cell(currentRow, 3).Value = "Client";
-        worksheet.Cell(currentRow, 4).Value = "Zone";
-        worksheet.Cell(currentRow, 5).Value = "Type";
-        worksheet.Cell(currentRow, 6).Value = "Description";
-        worksheet.Cell(currentRow, 7).Value = "Initiator";
-        worksheet.Cell(currentRow, 8).Value = "Direction";
-        worksheet.Cell(currentRow, 9).Value = "National/International";
-        worksheet.Cell(currentRow, 10).Value = "Category";
-        worksheet.Cell(currentRow, 11).Value = "Priority";
-        worksheet.Cell(currentRow, 12).Value = "State";
-        worksheet.Cell(currentRow, 13).Value = "Close Time";
+        worksheet.Cell(currentRow, 4).Value = "Problem Side";
+        worksheet.Cell(currentRow, 5).Value = "Zone";
+        worksheet.Cell(currentRow, 6).Value = "Type";
+        worksheet.Cell(currentRow, 7).Value = "Description";
+        worksheet.Cell(currentRow, 8).Value = "Initiator";
+        worksheet.Cell(currentRow, 9).Value = "Direction";
+        worksheet.Cell(currentRow, 10).Value = "National/International";
+        worksheet.Cell(currentRow, 11).Value = "Category";
+        worksheet.Cell(currentRow, 12).Value = "Priority";
+        worksheet.Cell(currentRow, 13).Value = "State";
+        worksheet.Cell(currentRow, 14).Value = "Close Time";
 
 
         foreach (var item in report)
@@ -371,16 +381,17 @@ namespace OtrsReportApp.Services
           worksheet.Cell(currentRow, 1).Value = item.TN;
           worksheet.Cell(currentRow, 2).Value = item.CreateTime;
           worksheet.Cell(currentRow, 3).Value = item.Client;
-          worksheet.Cell(currentRow, 4).Value = item.Zone;
-          worksheet.Cell(currentRow, 5).Value = item.Type;
-          worksheet.Cell(currentRow, 6).Value = item.Description;
-          worksheet.Cell(currentRow, 7).Value = item.Initiator;
-          worksheet.Cell(currentRow, 8).Value = item.Direction;
-          worksheet.Cell(currentRow, 9).Value = item.NatInt;
-          worksheet.Cell(currentRow, 10).Value = item.Category;
-          worksheet.Cell(currentRow, 11).Value = item.TicketPriority;
-          worksheet.Cell(currentRow, 12).Value = item.State;
-          worksheet.Cell(currentRow, 13).Value = item.CloseTime;
+          worksheet.Cell(currentRow, 4).Value = item.ProblemSide;
+          worksheet.Cell(currentRow, 5).Value = item.Zone;
+          worksheet.Cell(currentRow, 6).Value = item.Type;
+          worksheet.Cell(currentRow, 7).Value = item.Description;
+          worksheet.Cell(currentRow, 8).Value = item.Initiator;
+          worksheet.Cell(currentRow, 9).Value = item.Direction;
+          worksheet.Cell(currentRow, 10).Value = item.NatInt;
+          worksheet.Cell(currentRow, 11).Value = item.Category;
+          worksheet.Cell(currentRow, 12).Value = item.TicketPriority;
+          worksheet.Cell(currentRow, 13).Value = item.State;
+          worksheet.Cell(currentRow, 14).Value = item.CloseTime;
         }
 
 
@@ -656,13 +667,16 @@ namespace OtrsReportApp.Services
         {
           using (var otrsContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
           {
-            var pendedTickets = await context.PendedTicket.ToListAsync();
+            var otrsTTs = otrsContext.Ticket.Where(t => t.CreateTime >= period.startTime && t.CreateTime <= period.endTime);
+            var ttIds = await otrsTTs.Select(t => t.Id).ToListAsync();
+
+            var pendedTickets = await context.PendedTicket.Where(p => ttIds.Contains(p.TicketId)).ToListAsync();
             var pendedTicketId = pendedTickets.Select(pt => pt.TicketId);
 
             var dynamicFields = otrsContext.DynamicFieldValue.Where(dfv => pendedTicketId.Contains(dfv.ObjectId))
               .Include(dfv => dfv.Field).AsSplitQuery();
 
-            var result = otrsContext.Ticket.Where(t => pendedTicketId.Contains(t.Id) && t.CreateTime >= period.startTime && t.CreateTime <= period.endTime)
+            var result = otrsTTs.Where(t => pendedTicketId.Contains(t.Id))
               .Include(t => t.TicketState).AsSplitQuery().Include(t => t.TicketPriority).AsSplitQuery().AsEnumerable().Select(t => {
                 return new PendedTicketDTO()
                 {
@@ -670,6 +684,7 @@ namespace OtrsReportApp.Services
                   Tn = t.Tn,
                   CreateTime = t.CreateTime,
                   Client = t.CustomerId,
+                  ProblemSide = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("TicketSide"))?.ValueText,
                   Zone = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("ZoneKey"))?.ValueText.Replace("Key",""),
                   Type = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("TypeKey"))?.ValueText.Replace("Key", ""),
                   Description = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("DescriptionKey"))?.ValueText.Replace("Key", ""),
@@ -685,6 +700,21 @@ namespace OtrsReportApp.Services
             });
 
             return result.OrderByDescending(t => t.CreateTime).ToList();
+          }
+        }
+      }
+    }
+
+    public int TotalPendedTickets(Period period)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          using (var otrsContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+          {
+            var otrsIds = otrsContext.Ticket.Where(t => t.CreateTime >= period.startTime && t.CreateTime <= period.endTime).Select(t => t.Id).ToList(); 
+            return context.PendedTicket.Where(p => otrsIds.Contains(p.TicketId)).Count();
           }
         }
       }
