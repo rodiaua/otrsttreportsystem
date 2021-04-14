@@ -36,6 +36,8 @@ export class TtReportComponent implements OnInit {
   natInts: SelectItem[];
   priorities: SelectItem[];
   states: SelectItem[];
+  categories: SelectItem[];
+  problemSides: SelectItem[];
 
   selectedZones: SelectItem[];
   selectedTypes: SelectItem[];
@@ -44,6 +46,8 @@ export class TtReportComponent implements OnInit {
   selectedNatInts: SelectItem[];
   selectedPriorities: SelectItem[];
   selectedStates: SelectItem[];
+  selectedCategories: SelectItem[];
+  selectedProblemSides: SelectItem[];
 
 
 
@@ -61,6 +65,8 @@ export class TtReportComponent implements OnInit {
     this.natInts = [];
     this.priorities = [];
     this.states = [];
+    this.categories = [];
+    this.problemSides = [];
   }
 
   epochToString(epochTime: number) {
@@ -100,13 +106,15 @@ export class TtReportComponent implements OnInit {
 
       let filteringItems = this.report.filteringItems;
       if(filteringItems !== null){
-      filteringItems.zones?.length < 1 ? this.selectedZones = this.zones = [] : this.zones = filteringItems.zones;
-      filteringItems.types?.length < 1 ? this.selectedTypes = this.types = [] : this.types = filteringItems.types;
-      filteringItems.states?.length < 1 ? this.selectedStates = this.states = [] : this.states = filteringItems.states;
-      filteringItems.ticketPriorities?.length < 1 ? this.selectedPriorities = this.priorities = [] : this.priorities = filteringItems.ticketPriorities;
-      filteringItems.initiators?.length < 1 ? this.selectedInitiators = this.initiators = [] : this.initiators = filteringItems.initiators;
-      filteringItems.natInts?.length < 1 ? this.selectedNatInts = this.natInts = [] : this.natInts = filteringItems.natInts;
-      filteringItems.directions?.length < 1 ? this.selectedDirections = this.directions = [] : this.directions = filteringItems.directions;
+        filteringItems.zones?.length < 1 ? this.selectedZones = this.zones = [] : this.zones = filteringItems.zones;
+        filteringItems.types?.length < 1 ? this.selectedTypes = this.types = [] : this.types = filteringItems.types;
+        filteringItems.states?.length < 1 ? this.selectedStates = this.states = [] : this.states = filteringItems.states;
+        filteringItems.ticketPriorities?.length < 1 ? this.selectedPriorities = this.priorities = [] : this.priorities = filteringItems.ticketPriorities;
+        filteringItems.initiators?.length < 1 ? this.selectedInitiators = this.initiators = [] : this.initiators = filteringItems.initiators;
+        filteringItems.natInts?.length < 1 ? this.selectedNatInts = this.natInts = [] : this.natInts = filteringItems.natInts;
+        filteringItems.directions?.length < 1 ? this.selectedDirections = this.directions = [] : this.directions = filteringItems.directions;
+        filteringItems.categories?.length < 1 ? this.selectedCategories = this.categories = [] : this.categories = filteringItems.categories;
+        filteringItems.problemSides?.length < 1 ? this.selectedProblemSides = this.problemSides = [] : this.problemSides = filteringItems.problemSides;
       }
       this.loadingData = false;
     }
@@ -123,6 +131,8 @@ export class TtReportComponent implements OnInit {
       initiators: this.selectedInitiators?.map(initiator => initiator),
       natInts: this.selectedNatInts?.map(natInt => natInt),
       priorities: this.selectedPriorities?.map(priority => priority),
+      categories: this.selectedCategories?.map(category => category),
+      problemSides: this.selectedProblemSides?.map(problemSide => problemSide)
     }
   }
 

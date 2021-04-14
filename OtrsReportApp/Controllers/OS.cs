@@ -9,7 +9,7 @@ namespace OtrsReportApp.Controllers
 {
   [Route("api/[controller]")]
   [ApiController]
-  public class OS : Controller
+  public class OSController : Controller
   {
     [HttpGet("[action]")]
     public bool IsLinux()

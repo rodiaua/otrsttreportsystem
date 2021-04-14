@@ -6,5 +6,7 @@ export interface FilteringItems{
     natInts: SelectItem[],
     states: SelectItem[],
     initiators: SelectItem[],
-    ticketPriorities: SelectItem[]
+    ticketPriorities: SelectItem[],
+    categories: SelectItem[],
+    problemSides: SelectItem[]
 }

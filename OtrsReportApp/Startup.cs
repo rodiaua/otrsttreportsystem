@@ -119,6 +119,7 @@ namespace OtrsReportApp
       /*var path = Directory.GetCurrentDirectory();
       loggerFactory.AddFile("/Logs/Log.txt");*/
       /*app.AddLoggingToFile(loggerFactory);*/
+      app.UpdateOtsTciketDb();
 
       if (env.IsDevelopment())
       {

@@ -25,12 +25,12 @@ namespace OtrsReportApp.Controllers
 {
   [ApiController]
   [Route("api/[controller]")]
-  public class OtrsTicketController: Controller
+  public class OtrsTicketController : Controller
   {
-   private readonly OtrsTicketService _otrsServcie;
+    private readonly OtrsTicketService _otrsServcie;
     private readonly Logger _logger;
     private UserManager<AccountUser> _userManager;
-    
+
 
     public OtrsTicketController(OtrsTicketService otrs, Logger logger, UserManager<AccountUser> userManager)
     {
@@ -60,7 +60,7 @@ namespace OtrsReportApp.Controllers
       return _otrsServcie.GetFilteredTicketsReportBulk(filters);
     }
 
-    
+
 
     [HttpPost("[action]")]
     [Authorize(Roles = "Admin,User")]
@@ -95,7 +95,7 @@ namespace OtrsReportApp.Controllers
     [Authorize(Roles = "Admin,User")]
     public async Task<IEnumerable<OtrsTicketDTO>> GetPendingTickets()
     {
-      return  await _otrsServcie.GetPendingTickets();
+      return await _otrsServcie.GetPendingTickets();
     }
 
     [HttpGet("[action]")]
@@ -111,7 +111,7 @@ namespace OtrsReportApp.Controllers
     {
       await InitializeUserForLogging();
       var result = await _otrsServcie.SaveAcknowledgedTickets(acknowledgedTickets);
-      foreach(var x in result)
+      foreach (var x in result)
       {
         await _logger.Log($"Acknowlaged [TT#{x.Tn}] {x.Title}");
       }
@@ -152,7 +152,20 @@ namespace OtrsReportApp.Controllers
       _logger.User = user != null ? user : throw new Exception("Not authorized\r\n"+JsonConvert.SerializeObject(User.Claims));
     }
 
-    
+
+    [HttpPost("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public async Task<List<PendedTicketDTO>> GetPendedTickets([FromBody]Period period)
+    {
+      return await _otrsServcie.GetPendedTickets(period);
+    }
+
+    [HttpPost("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public int TotalPendedTickets([FromBody] Period period)
+    {
+      return _otrsServcie.TotalPendedTickets(period);
+    }
 
   }
 }

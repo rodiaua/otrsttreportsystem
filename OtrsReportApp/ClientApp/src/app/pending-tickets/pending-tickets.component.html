@@ -2,24 +2,27 @@
     <p-tabView (onChange)="onChangeHandle($event)">
         <p-tabPanel header="Pending Tickets">
             <div class="card">
+                <div class="card-header">
+                    <p-selectButton [options]="" [(ngModel)]="selectedCity" optionLabel="name"></p-selectButton>
+                </div>
                 <div class=" card-body">
                     <p-pickList [source]="list1" [target]="list2" sourceHeader="Pending Tickets"
                         targetHeader="Acknowledged Tickets" [dragdrop]="false" [sourceStyle]="{'max-height':'700px'}"
                         [targetStyle]="{'max-height':'700px'}" [showSourceControls]="false" [showTargetControls]="false"
                         (onMoveToTarget)="onMoveToTargetHandle($event)" (onMoveToSource)="onMoveToSourceHandle($event)"
                         (onMoveAllToTarget)="onMoveAllToTargetHandle($event)"
-                        (onMoveAllToSource)="onMoveAllToSourceHandle($event)">
+                        (onMoveAllToSource)="onMoveAllToSourceHandle($event)" >
                         <ng-template let-tt pTemplate="item">
-                            <div>
-                                <a>[TT#{{tt.tn}}] {{tt.title}}</a>
-                            </div>
-                            <div style="margin-top: 1rem; display: flex;">
-                                <a>{{isoTimeToDateTime(tt.createTime)}}</a>
-                                <div class="ml-auto">
-                                    <p-tag severity="{{getSeverity(tt)}}">Overdue: {{getTicketOverdueInMinutes(tt)}}
-                                        minutes</p-tag>
+                                <div>
+                                    <a>[TT#{{tt.tn}}] {{tt.title}}</a>
                                 </div>
-                            </div>
+                                <div style="margin-top: 1rem; display: flex;">
+                                    <a>{{isoTimeToDateTime(tt.createTime)}}</a>
+                                    <div class="ml-auto">
+                                        <p-tag severity="{{getSeverity(tt)}}">Overdue: {{getTicketOverdueInMinutes(tt)}}
+                                            minutes</p-tag>
+                                    </div>
+                                </div>
                         </ng-template>
                     </p-pickList>
                 </div>
@@ -42,6 +45,9 @@
                     </div>
                 </div>
             </div>
+        </p-tabPanel>
+        <p-tabPanel header="Pended tickets history">
+            <app-pended-ticket *ngIf="pendedTicketsOpened"></app-pended-ticket>
         </p-tabPanel>
     </p-tabView>
 </div>

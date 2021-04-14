@@ -7,9 +7,10 @@ using System.Threading.Tasks;
 
 namespace OtrsReportApp.Models.DTO
 {
-  public class TicketReportDTO
+  public class PendedTicketDTO
   {
-    public string TN { get; set; }
+    public long TicketId { get; set; }
+    public string Tn { get; set; }
     [JsonConverter(typeof(EpochConverter))]
     public DateTime CreateTime { get; set; }
     public string Client { get; set; }
@@ -25,5 +26,6 @@ namespace OtrsReportApp.Models.DTO
     public string TicketPriority { get; set; }
     [JsonConverter(typeof(EpochConverter))]
     public DateTime? CloseTime { get; set; }
+    public int Overdue { get; set; }
   }
 }

@@ -1,5 +1,6 @@
-export interface TicketReport {
-    tn: number,
+export interface PendedTicket{
+    ticketId: number,
+    tn: string,
     createTime: number,
     client: string,
     problemSide: string,
@@ -12,5 +13,6 @@ export interface TicketReport {
     state: string,
     initiator: string,
     ticketPriority: string,
-    closeTime: number
+    closeTime: number,
+    overdue: number
 }

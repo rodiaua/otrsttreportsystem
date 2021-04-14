@@ -21,6 +21,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using LinqKit;
 using OtrsReportApp.Models.Logging;
+using Microsoft.AspNetCore.Http.Connections;
 
 namespace OtrsReportApp.Services
 {
@@ -42,7 +43,7 @@ namespace OtrsReportApp.Services
       {
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var dynamicFieldsValues = db.DynamicFieldValue.Where(fields => ids.Contains(fields.ObjectId)).Include(field => field.Field).Where(field => field.Field.Name.Contains("Key") ||
-        field.Field.Name.Equals("TicketFreeTime1")).ToList();
+        field.Field.Name.Equals("TicketFreeTime1") || field.Field.Name.Contains("TicketSide")).ToList();
 
         Dictionary<long, Dictionary<string, string>> ttsDynamicFields = new Dictionary<long, Dictionary<string, string>>();
         foreach (var id in ids)
@@ -66,7 +67,8 @@ namespace OtrsReportApp.Services
             {
               if (dfValue.ValueText != null)
               {
-                if (configs.ContainsKey(dfValue.ValueText))
+                if (dfValue.Field.Name.Equals("TicketSide")) result.TryAdd("ProblemSide", dfValue.ValueText);
+                else if (configs.ContainsKey(dfValue.ValueText))
                   result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), configs.First(p => p.Key.Equals(dfValue.ValueText)).Value);
                 else result.TryAdd(dfValue.Field.Name.Substring(0, dfValue.Field.Name.Length - 3), dfValue.ValueText);
               }
@@ -107,6 +109,10 @@ namespace OtrsReportApp.Services
         var direction = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Direction").Distinct().ToList();
         var natInt = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("NatInt").Distinct().ToList();
         var initiator = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Initiator").Distinct().ToList();
+        var category = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("Category").Distinct().ToList();
+        var problemSide = ttsDynamicFields.Select(p => p.Value).ToList().SelectValues("ProblemSide").Distinct().ToList();
+
+
 
         filteringItems.States = tickets.Select(ticket => ticket.TicketState.Name).Distinct().OrderByDescending(state => state).toSelectItems();
         filteringItems.TicketPriorities = tickets.Select(ticket => ticket.TicketPriority.Name).Distinct().OrderByDescending(ticketPriority => ticketPriority).toSelectItems();
@@ -115,6 +121,8 @@ namespace OtrsReportApp.Services
         filteringItems.Directions = direction.Count > 0 ? direction.toSelectItems() : null;
         filteringItems.NatInts = natInt.Count > 0 ? natInt.toSelectItems() : null;
         filteringItems.Initiators = initiator.Count > 0 ? initiator.toSelectItems() : null;
+        filteringItems.Categories = category.Count > 0 ? category.toSelectItems() : null;
+        filteringItems.ProblemSides = problemSide.Count > 0 ? problemSide.toSelectItems() : null;
 
         foreach (var ticket in tickets)
         {
@@ -216,6 +224,7 @@ namespace OtrsReportApp.Services
       }
     }
 
+    //Category
     private bool IsTicketDTOValid(TicketReportDTO ticket, Filters filters)
     {
       var zones = filters.Zones;
@@ -225,6 +234,8 @@ namespace OtrsReportApp.Services
       var natInts = filters.NatInts;
       var priorities = filters.Priorities;
       var directions = filters.Directions;
+      var catogories = filters.Categories;
+      var problemSides = filters.ProblemSides;
 
       if (zones != null && zones.Length > 0 && zones.Contains(ticket.Zone) == false) return false;
       if (types != null && types.Length > 0 && types.Contains(ticket.Type) == false) return false;
@@ -233,9 +244,12 @@ namespace OtrsReportApp.Services
       if (natInts != null && natInts.Length > 0 && natInts.Contains(ticket.NatInt) == false) return false;
       if (priorities != null && priorities.Length > 0 && priorities.Contains(ticket.TicketPriority) == false) return false;
       if (directions != null && directions.Length > 0 && directions.Contains(ticket.Direction) == false) return false;
+      if (catogories != null && catogories.Length > 0 && catogories.Contains(ticket.Category) == false) return false;
+      if (problemSides != null && problemSides.Length > 0 && problemSides.Contains(ticket.ProblemSide) == false) return false;
       return true;
     }
 
+    //Category
     public FilteringItems GetFilteringItems(Period period)
     {
       using (var scope = _scopeFactory.CreateScope())
@@ -257,6 +271,8 @@ namespace OtrsReportApp.Services
         var directions = new List<string>();
         var natInts = new List<string>();
         var initiators = new List<string>();
+        var categories = new List<string>();
+        var problemSides = new List<string>();
         foreach (var ticket in tickets)
         {
           var dfields = GetTTDynamicFields(ticket.Id);
@@ -267,6 +283,8 @@ namespace OtrsReportApp.Services
             if (dfields.ContainsKey("Direction") && !String.IsNullOrEmpty(dfields["Direction"])) directions.Add(dfields["Direction"]);
             if (dfields.ContainsKey("NatInt") && !String.IsNullOrEmpty(dfields["NatInt"])) natInts.Add(dfields["NatInt"]);
             if (dfields.ContainsKey("Initiator") && !String.IsNullOrEmpty(dfields["Initiator"])) initiators.Add(dfields["Initiator"]);
+            if (dfields.ContainsKey("Category") && !String.IsNullOrEmpty(dfields["Category"])) initiators.Add(dfields["Category"]);
+            if (dfields.ContainsKey("ProblemSide") && !String.IsNullOrEmpty(dfields["ProblemSide"])) initiators.Add(dfields["ProblemSide"]);
           }
         }
         var filteringItems = new FilteringItems()
@@ -277,7 +295,9 @@ namespace OtrsReportApp.Services
           Zones = zones.Distinct().OrderByDescending(name => name).toSelectItems(),
           NatInts = natInts.Distinct().OrderByDescending(name => name).toSelectItems(),
           States = states,
-          TicketPriorities = priorities
+          TicketPriorities = priorities,
+          Categories = categories.Distinct().OrderByDescending(name => name).toSelectItems(),
+          ProblemSides = problemSides.Distinct().OrderByDescending(name => name).toSelectItems()
         };
         return filteringItems;
       }
@@ -341,15 +361,17 @@ namespace OtrsReportApp.Services
         worksheet.Cell(currentRow, 1).Value = "TN";
         worksheet.Cell(currentRow, 2).Value = "Create Time";
         worksheet.Cell(currentRow, 3).Value = "Client";
-        worksheet.Cell(currentRow, 4).Value = "Zone";
-        worksheet.Cell(currentRow, 5).Value = "Type";
-        worksheet.Cell(currentRow, 6).Value = "Description";
-        worksheet.Cell(currentRow, 7).Value = "Initiator";
-        worksheet.Cell(currentRow, 8).Value = "Direction";
-        worksheet.Cell(currentRow, 9).Value = "National/International";
-        worksheet.Cell(currentRow, 10).Value = "Priority";
-        worksheet.Cell(currentRow, 11).Value = "State";
-        worksheet.Cell(currentRow, 12).Value = "Close Time";
+        worksheet.Cell(currentRow, 4).Value = "Problem Side";
+        worksheet.Cell(currentRow, 5).Value = "Zone";
+        worksheet.Cell(currentRow, 6).Value = "Type";
+        worksheet.Cell(currentRow, 7).Value = "Description";
+        worksheet.Cell(currentRow, 8).Value = "Initiator";
+        worksheet.Cell(currentRow, 9).Value = "Direction";
+        worksheet.Cell(currentRow, 10).Value = "National/International";
+        worksheet.Cell(currentRow, 11).Value = "Category";
+        worksheet.Cell(currentRow, 12).Value = "Priority";
+        worksheet.Cell(currentRow, 13).Value = "State";
+        worksheet.Cell(currentRow, 14).Value = "Close Time";
 
 
         foreach (var item in report)
@@ -359,15 +381,17 @@ namespace OtrsReportApp.Services
           worksheet.Cell(currentRow, 1).Value = item.TN;
           worksheet.Cell(currentRow, 2).Value = item.CreateTime;
           worksheet.Cell(currentRow, 3).Value = item.Client;
-          worksheet.Cell(currentRow, 4).Value = item.Zone;
-          worksheet.Cell(currentRow, 5).Value = item.Type;
-          worksheet.Cell(currentRow, 6).Value = item.Description;
-          worksheet.Cell(currentRow, 7).Value = item.Initiator;
-          worksheet.Cell(currentRow, 8).Value = item.Direction;
-          worksheet.Cell(currentRow, 9).Value = item.NatInt;
-          worksheet.Cell(currentRow, 10).Value = item.TicketPriority;
-          worksheet.Cell(currentRow, 11).Value = item.State;
-          worksheet.Cell(currentRow, 12).Value = item.CloseTime;
+          worksheet.Cell(currentRow, 4).Value = item.ProblemSide;
+          worksheet.Cell(currentRow, 5).Value = item.Zone;
+          worksheet.Cell(currentRow, 6).Value = item.Type;
+          worksheet.Cell(currentRow, 7).Value = item.Description;
+          worksheet.Cell(currentRow, 8).Value = item.Initiator;
+          worksheet.Cell(currentRow, 9).Value = item.Direction;
+          worksheet.Cell(currentRow, 10).Value = item.NatInt;
+          worksheet.Cell(currentRow, 11).Value = item.Category;
+          worksheet.Cell(currentRow, 12).Value = item.TicketPriority;
+          worksheet.Cell(currentRow, 13).Value = item.State;
+          worksheet.Cell(currentRow, 14).Value = item.CloseTime;
         }
 
 
@@ -378,7 +402,7 @@ namespace OtrsReportApp.Services
       }
     }
 
-    private bool TicketIsPending(ICollection<Article> articles, AcknowledgedTicket acknowledgedTicket = null)
+    private bool TicketIsPending(ICollection<Article> articles)
     {
       var externalEMailes = articles
         .Where(a => a.ArticleTypeId == (short)ArticleType.ExternalEmail && a.ArticleSenderTypeId == (short)ArticalSenderType.Customer)
@@ -404,7 +428,7 @@ namespace OtrsReportApp.Services
       {
         using (var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
         {
-          var ackTicketsIds =  (await GetAcknowledgedTickets()).Select(x => x.Id);
+          var ackTicketsIds = (await GetAcknowledgedTickets()).Select(x => x.Id);
 
           var result = await context.Ticket.AsSplitQuery().Where(tt => tt.TicketStateId == (short)State.Open && tt.QueueId != (int)TicketQueue.Trash &&
           context.DynamicFieldValue.AsSplitQuery().
@@ -413,7 +437,7 @@ namespace OtrsReportApp.Services
                         Where(dfv => dfv.ValueText.Equals("ClientKey")).Select(dfv => dfv.ObjectId).Contains(tt.Id))
                         .Include(tt => tt.Article).AsSplitQuery().ToListAsync();
 
-          return result.Where(tt => TicketIsPending(tt.Article)).Select(t =>
+          var otrsTicketDTOs = result.Where(tt => TicketIsPending(tt.Article)).Select(t =>
           {
             return new OtrsTicketDTO()
             {
@@ -427,7 +451,18 @@ namespace OtrsReportApp.Services
               .First()
               .ToUniversalTime()
             };
-          }).OrderByDescending(x => x.CreateTime); ;
+          }).OrderByDescending(x => x.CreateTime);
+
+          await SavePendedTickets(otrsTicketDTOs.Select(t =>
+          {
+            return new PendedTicket()
+            {
+              TicketId = t.Id,
+              Overdue = (int)((((TimeSpan)(DateTime.UtcNow - t.CreateTime)).TotalSeconds) / 60)
+            };
+          }).ToList());
+
+          return otrsTicketDTOs;
         }
       }
     }
@@ -476,21 +511,41 @@ namespace OtrsReportApp.Services
       {
         using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
         {
-          var acknowledgedTickets = (from t in context.AcknowledgedTicket
-                                           select t).ToList();
-          var closedTtIds = await GetClosedTicketIds(acknowledgedTickets.Select(s => s.TicketId));
 
-          if (closedTtIds.Count() > 0)
+          var acknowledgedTickets = await (from t in context.AcknowledgedTicket
+                                           select t).ToListAsync();
+          using (var otrsContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
           {
-            var closedAckTts = acknowledgedTickets.Where(t => closedTtIds.Contains(t.TicketId));
-            context.AcknowledgedTicket.RemoveRange(closedAckTts);
-            await context.SaveChangesAsync();
-            return await GetTickets(acknowledgedTickets.Where(t => !closedTtIds.Contains(t.TicketId)).Select(t => t.TicketId).ToList());
-          }
-          return await GetTickets(acknowledgedTickets.Select(t => t.TicketId).ToList());
+            var ackPendingTtIds = (await otrsContext.Ticket.Where(t => acknowledgedTickets.Select(t => t.TicketId).Contains(t.Id)).Include(t => t.Article).AsSplitQuery().ToListAsync())
+              .Where(tt => IsAcknowledgedTicketInPendingState(tt.Article.ToList(), acknowledgedTickets.Single(t => t.TicketId == tt.Id))).Select(tt => tt.Id);
 
+            var closedTtIds = await GetClosedTicketIds(acknowledgedTickets.Select(s => s.TicketId));
+
+            context.AcknowledgedTicket.RemoveRange(acknowledgedTickets.Where(t => closedTtIds.Contains(t.TicketId) || ackPendingTtIds.Contains(t.TicketId)));
+            await context.SaveChangesAsync();
+            return await GetTickets(await context.AcknowledgedTicket.Select(t => t.TicketId).ToListAsync());
+          }
         }
       }
+    }
+
+    public bool IsAcknowledgedTicketInPendingState(List<Article> articles, AcknowledgedTicket acknowledgedTicket)
+    {
+      var externalEMailes = articles
+        .Where(a => a.ArticleTypeId == (short)ArticleType.ExternalEmail && a.ArticleSenderTypeId == (short)ArticalSenderType.Customer)
+        .OrderByDescending(a => a.CreateTime);
+      var agentAnswers = articles
+        .Where(a => a.ArticleTypeId == (short)ArticleType.ExternalEmail && a.ArticleSenderTypeId == (short)ArticalSenderType.Agent)
+        .OrderByDescending(a => a.CreateTime);
+
+      var agentAnswered = agentAnswers.Count() > 0;
+
+      if (acknowledgedTicket.CreateTime < externalEMailes.First().CreateTime
+         && (agentAnswered ? externalEMailes.First().CreateTime > agentAnswers.First().CreateTime : true))
+      {
+        return true;
+      }
+      return false;
     }
 
     public AcknowledgedTicket GetAcknowledgedTickets(long id)
@@ -527,9 +582,14 @@ namespace OtrsReportApp.Services
       {
         using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
         {
-          context.AcknowledgedTicket.AddRange(acknowledgedTickets);
-          await context.SaveChangesAsync();
-          return await GetTickets(acknowledgedTickets.Select(t => t.TicketId).ToList()); 
+          var ackTts = await context.AcknowledgedTicket.ToListAsync();
+          var ackTtsWithNoDuplicates = acknowledgedTickets.Where(t => !ackTts.Select(s => s.TicketId).Contains(t.TicketId));
+          if (acknowledgedTickets.Count() > 0)
+          {
+            context.AcknowledgedTicket.AddRange(ackTtsWithNoDuplicates);
+            await context.SaveChangesAsync();
+          }
+          return await GetTickets(acknowledgedTickets.Select(t => t.TicketId).ToList());
         }
       }
     }
@@ -540,8 +600,12 @@ namespace OtrsReportApp.Services
       {
         using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
         {
-          context.AcknowledgedTicket.Remove(GetAcknowledgedTickets(id));
-          await context.SaveChangesAsync();
+          var ackTt = GetAcknowledgedTickets(id);
+          if (ackTt != null)
+          {
+            context.AcknowledgedTicket.Remove(ackTt);
+            await context.SaveChangesAsync();
+          }
           return (await GetTickets(new long[] { id }.ToList())).FirstOrDefault();
         }
       }
@@ -555,7 +619,7 @@ namespace OtrsReportApp.Services
         {
           context.AcknowledgedTicket.RemoveRange(GetAcknowledgedTickets(ids));
           await context.SaveChangesAsync();
-          return await GetTickets(ids.ToList()); 
+          return await GetTickets(ids.ToList());
         }
       }
     }
@@ -567,6 +631,91 @@ namespace OtrsReportApp.Services
         using (var context = scope.ServiceProvider.GetRequiredService<LoggingDbContext>())
         {
           return context.LogItem.OrderByDescending(log => log.Time).ToList();
+        }
+      }
+    }
+
+    public async Task SavePendedTickets(List<PendedTicket> pendedTickets)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          pendedTickets.ForEach(pendedTicket =>
+          {
+            var ticketExists = context.PendedTicket.FirstOrDefault(t => t.TicketId == pendedTicket.TicketId);
+            if (ticketExists != null && ticketExists.Overdue < 180 && pendedTicket.Overdue > 180)
+            {
+              ticketExists.Overdue = pendedTicket.Overdue;
+              context.Update(ticketExists);
+            }
+            else if (ticketExists == null && pendedTicket.Overdue > 60)
+            {
+              context.Add(pendedTicket);
+            }
+          });
+          await context.SaveChangesAsync();
+        }
+      }
+    }
+
+    public async Task<List<PendedTicketDTO>> GetPendedTickets(Period period)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          using (var otrsContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+          {
+            var otrsTTs = otrsContext.Ticket.Where(t => t.CreateTime >= period.startTime && t.CreateTime <= period.endTime);
+            var ttIds = await otrsTTs.Select(t => t.Id).ToListAsync();
+
+            var pendedTickets = await context.PendedTicket.Where(p => ttIds.Contains(p.TicketId)).ToListAsync();
+            var pendedTicketId = pendedTickets.Select(pt => pt.TicketId);
+
+            var dynamicFields = otrsContext.DynamicFieldValue.Where(dfv => pendedTicketId.Contains(dfv.ObjectId))
+              .Include(dfv => dfv.Field).AsSplitQuery();
+
+            var result = otrsTTs.Where(t => pendedTicketId.Contains(t.Id))
+              .Include(t => t.TicketState).AsSplitQuery().Include(t => t.TicketPriority).AsSplitQuery().AsEnumerable().Select(t => {
+                return new PendedTicketDTO()
+                {
+                  TicketId = t.Id,
+                  Tn = t.Tn,
+                  CreateTime = t.CreateTime,
+                  Client = t.CustomerId,
+                  ProblemSide = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("TicketSide"))?.ValueText,
+                  Zone = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("ZoneKey"))?.ValueText.Replace("Key",""),
+                  Type = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("TypeKey"))?.ValueText.Replace("Key", ""),
+                  Description = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("DescriptionKey"))?.ValueText.Replace("Key", ""),
+                  Direction = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("DirectionKey"))?.ValueText.Replace("Key", ""),
+                  NatInt = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("NatIntKey"))?.ValueText.Replace("Key", ""),
+                  Category = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("CategoryKey"))?.ValueText.Replace("Key", ""),
+                  Initiator = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("InitiatorKey"))?.ValueText.Replace("Key", ""),
+                  TicketPriority = t.TicketPriority.Name,
+                  State = t.TicketState.Name,
+                  CloseTime = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.ValueDate != null)?.ValueDate,
+                  Overdue = pendedTickets.FirstOrDefault(pt => pt.TicketId == t.Id).Overdue
+                };
+            });
+
+            return result.OrderByDescending(t => t.CreateTime).ToList();
+          }
+        }
+      }
+    }
+
+    public int TotalPendedTickets(Period period)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          using (var otrsContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+          {
+            var otrsIds = otrsContext.Ticket.Where(t => t.CreateTime >= period.startTime && t.CreateTime <= period.endTime).Select(t => t.Id).ToList(); 
+            return context.PendedTicket.Where(p => otrsIds.Contains(p.TicketId)).Count();
+          }
         }
       }
     }

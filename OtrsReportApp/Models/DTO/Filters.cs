@@ -15,5 +15,7 @@ namespace OtrsReportApp.Models.DTO
     public string[] NatInts { get; set; }
     public string[] Priorities { get; set; }
     public string[] States { get; set; }
+    public string[] Categories { get; set; }
+    public string[] ProblemSides { get; set; }
   }
 }

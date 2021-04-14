@@ -8,4 +8,6 @@ export interface Filters{
     natInts: any[],
     priorities: any[],
     states: any[],
+    categories: any[],
+    problemSides: any[]
 }
