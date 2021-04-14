@@ -38,12 +38,12 @@ export class OtrsTTService{
         return this.http.post(`${this.domain}/downloadReport`, filters, {responseType: 'blob'});
     }
 
-    getPendingTickets(){
-        return this.http.get<OtrsTicket[]>(`${this.domain}/getPendingTickets`).toPromise();
+    getPendingTickets(type: string){
+        return this.http.get<OtrsTicket[]>(`${this.domain}/getPendingTickets/${type}`).toPromise();
     }
 
-    getAcknowledgedTickets(){
-        return this.http.get<OtrsTicket[]>(`${this.domain}/getAcknowledgedTickets`).toPromise();
+    getAcknowledgedTickets(type: string){
+        return this.http.get<OtrsTicket[]>(`${this.domain}/getAcknowledgedTickets/${type}`).toPromise();
     }
 
     saveAcknowledgedTickets(acknowledgedTickets: AcknowledgedTicket[]){

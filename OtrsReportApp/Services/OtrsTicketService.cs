@@ -422,20 +422,24 @@ namespace OtrsReportApp.Services
       return false;
     }
 
-    public async Task<IEnumerable<OtrsTicketDTO>> GetPendingTickets()
+    public async Task<IEnumerable<OtrsTicketDTO>> GetPendingTickets(string type)
     {
       using (var scope = _scopeFactory.CreateScope())
       {
         using (var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
         {
-          var ackTicketsIds = (await GetAcknowledgedTickets()).Select(x => x.Id);
+          var ackTicketsIds = (await GetAcknowledgedTickets(type)).Select(x => x.Id);
 
           var result = await context.Ticket.AsSplitQuery().Where(tt => tt.TicketStateId == (short)State.Open && tt.QueueId != (int)TicketQueue.Trash &&
-          context.DynamicFieldValue.AsSplitQuery().
-                        Where(dfv => dfv.ValueText.Equals("NationalKey")).Select(dfv => dfv.ObjectId).Contains(tt.Id)
+                        context.DynamicFieldValue.AsSplitQuery()
+                        .Where(dfv => type.Equals("All")? dfv.ValueText.Equals("NationalKey") || dfv.ValueText.Equals("InternationalKey") : dfv.ValueText.Equals(type))
+                        .Select(dfv => dfv.ObjectId).Contains(tt.Id)
                         && !ackTicketsIds.Contains(tt.Id)).Where(tt => context.DynamicFieldValue.AsSplitQuery().
                         Where(dfv => dfv.ValueText.Equals("ClientKey")).Select(dfv => dfv.ObjectId).Contains(tt.Id))
                         .Include(tt => tt.Article).AsSplitQuery().ToListAsync();
+
+          var dynamicFiledValues = await context.DynamicFieldValue.Include(dfv => dfv.Field).AsSplitQuery()
+                                  .Where(dfv => result.Select(t => t.Id).Contains(dfv.ObjectId) && dfv.Field.Label.Equals("Nat/Int")).ToListAsync();
 
           var otrsTicketDTOs = result.Where(tt => TicketIsPending(tt.Article)).Select(t =>
           {
@@ -444,6 +448,7 @@ namespace OtrsReportApp.Services
               Id = t.Id,
               Tn = t.Tn,
               Title = t.Title,
+              NatInt = dynamicFiledValues.Where(dfv => dfv.ObjectId == t.Id).ToList().FirstOrDefault()?.ValueText,
               CreateTime = t.Article.
               Where(a => a.ArticleTypeId == (short)ArticleType.ExternalEmail && a.ArticleSenderTypeId == (short)ArticalSenderType.Customer)
               .Select(a => a.CreateTime)
@@ -475,6 +480,9 @@ namespace OtrsReportApp.Services
         {
           var result = await context.Ticket.AsSplitQuery().Where(t => ids.Contains(t.Id)).Include(t => t.Article).AsSplitQuery().ToListAsync();
 
+          var dynamicFiledValues = await context.DynamicFieldValue.Include(dfv => dfv.Field).AsSplitQuery()
+                                 .Where(dfv => result.Select(t => t.Id).Contains(dfv.ObjectId) && dfv.Field.Label.Equals("Nat/Int")).ToListAsync();
+
           return result.Select(t =>
           {
             return new OtrsTicketDTO()
@@ -482,6 +490,7 @@ namespace OtrsReportApp.Services
               Id = t.Id,
               Tn = t.Tn,
               Title = t.Title,
+              NatInt = dynamicFiledValues.Where(dfv => dfv.ObjectId == t.Id).ToList().FirstOrDefault()?.ValueText,
               CreateTime = t.Article.
               Where(a => a.ArticleTypeId == (short)ArticleType.ExternalEmail && a.ArticleSenderTypeId == (short)ArticalSenderType.Customer)
               .Select(a => a.CreateTime)
@@ -505,13 +514,12 @@ namespace OtrsReportApp.Services
       }
     }
 
-    public async Task<IEnumerable<OtrsTicketDTO>> GetAcknowledgedTickets()
+    public async Task<IEnumerable<OtrsTicketDTO>> GetAcknowledgedTickets(string type)
     {
       using (var scope = _scopeFactory.CreateScope())
       {
         using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
         {
-
           var acknowledgedTickets = await (from t in context.AcknowledgedTicket
                                            select t).ToListAsync();
           using (var otrsContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
@@ -523,7 +531,9 @@ namespace OtrsReportApp.Services
 
             context.AcknowledgedTicket.RemoveRange(acknowledgedTickets.Where(t => closedTtIds.Contains(t.TicketId) || ackPendingTtIds.Contains(t.TicketId)));
             await context.SaveChangesAsync();
-            return await GetTickets(await context.AcknowledgedTicket.Select(t => t.TicketId).ToListAsync());
+            return await GetTickets(await context.AcknowledgedTicket
+              .Where(t=> type.Equals("All") ? t.NatInt.Equals("NationalKey") || t.NatInt.Equals("InternationalKey") : t.NatInt.Equals(type))
+              .Select(t => t.TicketId).ToListAsync());
           }
         }
       }

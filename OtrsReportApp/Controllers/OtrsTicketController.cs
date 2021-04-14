@@ -91,18 +91,18 @@ namespace OtrsReportApp.Controllers
       return report;
     }
 
-    [HttpGet("[action]")]
+    [HttpGet("[action]/{type}")]
     [Authorize(Roles = "Admin,User")]
-    public async Task<IEnumerable<OtrsTicketDTO>> GetPendingTickets()
+    public async Task<IEnumerable<OtrsTicketDTO>> GetPendingTickets(string type)
     {
-      return await _otrsServcie.GetPendingTickets();
+      return await _otrsServcie.GetPendingTickets(type);
     }
 
-    [HttpGet("[action]")]
+    [HttpGet("[action]/{type}")]
     [Authorize(Roles = "Admin,User")]
-    public async Task<IEnumerable<OtrsTicketDTO>> GetAcknowledgedTickets()
+    public async Task<IEnumerable<OtrsTicketDTO>> GetAcknowledgedTickets(string type)
     {
-      return await _otrsServcie.GetAcknowledgedTickets();
+      return await _otrsServcie.GetAcknowledgedTickets(type);
     }
 
     [HttpPost("[action]")]
@@ -146,7 +146,6 @@ namespace OtrsReportApp.Controllers
 
     private async Task InitializeUserForLogging()
     {
-      
       var userId = User.Claims.First(c => c.Type.Equals("userId")).Value;
       var user = await _userManager.FindByIdAsync(userId);
       _logger.User = user != null ? user : throw new Exception("Not authorized\r\n"+JsonConvert.SerializeObject(User.Claims));

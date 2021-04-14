@@ -13,5 +13,6 @@ namespace OtrsReportApp.Models.OtrsTicket
     public long TicketId { get; set; }
     [JsonConverter(typeof(EpochConverter))]
     public DateTime CreateTime { get; set; }
+    public string NatInt { get; set; }
   }
 }

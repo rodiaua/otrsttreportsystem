@@ -25,16 +25,30 @@ export class PendingTicketsComponent implements OnInit, OnDestroy {
   loadDataInBackground = true;
   searchPattern = "";
   pendedTicketsOpened = false;
-  
-  #error add NAT int
-  // trafficTapes = {
-  //   name: 
-  // }
+  isLoading = false;
+
+
+  natIntTypes = [
+    { name: "National", key: "NationalKey"},
+    { name: "International", key:"InternationalKey" },
+    { name: "All", key: "All" }
+  ];
+
+  natIntSelected: { name: string, key:string } = { name: "International", key:"InternationalKey" };
 
   constructor(private otrsService: OtrsTTService, private logService: LoggingHubService) { }
   ngOnDestroy(): void {
     this.logService.disconnect();
     this.loadDataInBackground = false;
+  }
+
+  async onSelectedHandle(event){
+    this.isLoading = true;
+    this.list1 = await this.otrsService.getPendingTickets(event.value.key);
+    this.list1.sort((a, b) => moment.utc(a.createTime).valueOf() - moment.utc(b.createTime).valueOf());
+    this.list2 = await this.otrsService.getAcknowledgedTickets(event.value.key);
+    this.list2.sort((a, b) => moment.utc(a.createTime).valueOf() - moment.utc(b.createTime).valueOf());
+    this.isLoading = false;
   }
 
   searchModelChange(event) {
@@ -51,9 +65,9 @@ export class PendingTicketsComponent implements OnInit, OnDestroy {
 
   async startLoadDataInBackground() {
     while (this.loadDataInBackground) {
-      this.list1 = await this.otrsService.getPendingTickets();
+      this.list1 = await this.otrsService.getPendingTickets(this.natIntSelected.key);
       this.list1.sort((a, b) => moment.utc(a.createTime).valueOf() - moment.utc(b.createTime).valueOf());
-      this.list2 = await this.otrsService.getAcknowledgedTickets();
+      this.list2 = await this.otrsService.getAcknowledgedTickets(this.natIntSelected.key);
       this.list2.sort((a, b) => moment.utc(a.createTime).valueOf() - moment.utc(b.createTime).valueOf());
       await this.delay(1000 * 60);
     }
@@ -65,7 +79,8 @@ export class PendingTicketsComponent implements OnInit, OnDestroy {
       return <AcknowledgedTicket>
         {
           ticketId: x.id,
-          createTime: moment(x.createTime).unix()
+          createTime: moment(x.createTime).unix(),
+          natInt: x.natInt
         }
     }));
   }
@@ -81,7 +96,8 @@ export class PendingTicketsComponent implements OnInit, OnDestroy {
       return <AcknowledgedTicket>
         {
           ticketId: x.id,
-          createTime: moment(x.createTime).unix()
+          createTime: moment(x.createTime).unix(),
+          natInt: x.natInt
         }
     }));
   }
@@ -103,12 +119,12 @@ export class PendingTicketsComponent implements OnInit, OnDestroy {
         this.logItems.unshift(...logItems)
         this.logs = this.logItems.map(l => this.logItemToString(l)).filter(l => this.searchPattern != "" ? l.includes(this.searchPattern) : true);
       });
-    } 
+    }
     else if (event.index == 0) {
       this.loadDataInBackground = true;
       this.startLoadDataInBackground();
       this.logService.disconnect();
-    }else if(event.index == 2){
+    } else if (event.index == 2) {
       this.pendedTicketsOpened = true;
     }
   }
@@ -135,7 +151,7 @@ export class PendingTicketsComponent implements OnInit, OnDestroy {
   getSeverity(ticket: OtrsTicket) {
     var overdue = this.getTicketOverdueInMinutes(ticket);
     if (overdue < 60) return 'success';
-    return overdue > 180 ? 'danger': 'warning';
+    return overdue > 180 ? 'danger' : 'warning';
   }
 
 }

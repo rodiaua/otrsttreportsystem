@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using FluentScheduler;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Schema;
 using OtrsReportApp.Data;
 using OtrsReportApp.Models;
 using OtrsReportApp.Models.OtrsTicket;
+using OtrsReportApp.Services;
 using OtrsReportApp.Services.EmailService;
 using System;
 using System.Collections.Generic;
@@ -17,7 +20,19 @@ namespace OtrsReportApp.Extensions
 {
   public static class OtrsReportAppExtension
   {
-    public static IApplicationBuilder UpdateOtsTciketDb(this IApplicationBuilder app)
+
+    public static IApplicationBuilder RunBackgroundTask(this IApplicationBuilder app)
+    {
+      var provider = app.ApplicationServices;
+      using (var scope = provider.CreateScope())
+      {
+        var service = scope.ServiceProvider.GetRequiredService<OtrsTicketService>();
+        JobManager.AddJob(async () => await service.GetPendingTickets("All"), s => s.ToRunNow().AndEvery(1).Minutes());
+      }
+      return app;
+    }
+
+    public static IApplicationBuilder UpdateOtrsTciketDb(this IApplicationBuilder app)
     {
       var provider = app.ApplicationServices;
       using (var scope = provider.CreateScope())

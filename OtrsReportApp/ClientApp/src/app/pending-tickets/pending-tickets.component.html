@@ -2,8 +2,9 @@
     <p-tabView (onChange)="onChangeHandle($event)">
         <p-tabPanel header="Pending Tickets">
             <div class="card">
+                <p-progressBar *ngIf="isLoading" mode="indeterminate" [style]="{'height': '6px'}"></p-progressBar>
                 <div class="card-header">
-                    <p-selectButton [options]="" [(ngModel)]="selectedCity" optionLabel="name"></p-selectButton>
+                    <p-selectButton [options]="natIntTypes" [(ngModel)]="natIntSelected" optionLabel="name" (onChange)="onSelectedHandle($event)"></p-selectButton>
                 </div>
                 <div class=" card-body">
                     <p-pickList [source]="list1" [target]="list2" sourceHeader="Pending Tickets"
@@ -14,7 +15,7 @@
                         (onMoveAllToSource)="onMoveAllToSourceHandle($event)" >
                         <ng-template let-tt pTemplate="item">
                                 <div>
-                                    <a>[TT#{{tt.tn}}] {{tt.title}}</a>
+                                    <a>[TT#{{tt.tn}}] ({{tt.natInt.substring(0,3)}}) {{tt.title}}</a>
                                 </div>
                                 <div style="margin-top: 1rem; display: flex;">
                                     <a>{{isoTimeToDateTime(tt.createTime)}}</a>

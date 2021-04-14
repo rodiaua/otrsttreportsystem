@@ -10,5 +10,6 @@ namespace OtrsReportApp.Models.OtrsTicket
     public int Id { get; set; }
     public long TicketId { get; set; }
     public int Overdue{ get; set; }
+
   }
 }

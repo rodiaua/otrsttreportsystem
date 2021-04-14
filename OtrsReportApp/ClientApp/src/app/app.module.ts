@@ -45,6 +45,7 @@ import { PendedTicketComponent } from './pended-ticket/pended-ticket.component';
 import { NgxDaterangepickerMd } from 'ngx-daterangepicker-material';
 
 
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -60,7 +61,7 @@ import { NgxDaterangepickerMd } from 'ngx-daterangepicker-material';
     TwoFactorAuthenticationComponent,
     ReportCreatorComponent,
     PendingTicketsComponent,
-    PendedTicketComponent
+    PendedTicketComponent,
   ],
   imports: [
     SelectButtonModule,
