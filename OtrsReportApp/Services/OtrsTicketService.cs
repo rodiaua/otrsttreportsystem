@@ -22,6 +22,8 @@ using System.Linq.Expressions;
 using LinqKit;
 using OtrsReportApp.Models.Logging;
 using Microsoft.AspNetCore.Http.Connections;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace OtrsReportApp.Services
 {
@@ -432,7 +434,7 @@ namespace OtrsReportApp.Services
 
           var result = await context.Ticket.AsSplitQuery().Where(tt => tt.TicketStateId == (short)State.Open && tt.QueueId != (int)TicketQueue.Trash &&
                         context.DynamicFieldValue.AsSplitQuery()
-                        .Where(dfv => type.Equals("All")? dfv.ValueText.Equals("NationalKey") || dfv.ValueText.Equals("InternationalKey") : dfv.ValueText.Equals(type))
+                        .Where(dfv => type.Equals("All") ? dfv.ValueText.Equals("NationalKey") || dfv.ValueText.Equals("InternationalKey") : dfv.ValueText.Equals(type))
                         .Select(dfv => dfv.ObjectId).Contains(tt.Id)
                         && !ackTicketsIds.Contains(tt.Id)).Where(tt => context.DynamicFieldValue.AsSplitQuery().
                         Where(dfv => dfv.ValueText.Equals("ClientKey")).Select(dfv => dfv.ObjectId).Contains(tt.Id))
@@ -532,7 +534,7 @@ namespace OtrsReportApp.Services
             context.AcknowledgedTicket.RemoveRange(acknowledgedTickets.Where(t => closedTtIds.Contains(t.TicketId) || ackPendingTtIds.Contains(t.TicketId)));
             await context.SaveChangesAsync();
             return await GetTickets(await context.AcknowledgedTicket
-              .Where(t=> type.Equals("All") ? t.NatInt.Equals("NationalKey") || t.NatInt.Equals("InternationalKey") : t.NatInt.Equals(type))
+              .Where(t => type.Equals("All") ? t.NatInt.Equals("NationalKey") || t.NatInt.Equals("InternationalKey") : t.NatInt.Equals(type))
               .Select(t => t.TicketId).ToListAsync());
           }
         }
@@ -669,7 +671,7 @@ namespace OtrsReportApp.Services
       }
     }
 
-    public async Task<List<PendedTicketDTO>> GetPendedTickets(Period period)
+    public async Task<List<PendedTicketDTO>> GetPendedTickets(Filters filters)
     {
       using (var scope = _scopeFactory.CreateScope())
       {
@@ -677,39 +679,75 @@ namespace OtrsReportApp.Services
         {
           using (var otrsContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
           {
-            var otrsTTs = otrsContext.Ticket.Where(t => t.CreateTime >= period.startTime && t.CreateTime <= period.endTime);
+
+            var otrsTTs = otrsContext.Ticket.Where(t => t.CreateTime >= filters.Period.startTime && t.CreateTime <= filters.Period.endTime);
             var ttIds = await otrsTTs.Select(t => t.Id).ToListAsync();
 
-            var pendedTickets = await context.PendedTicket.Where(p => ttIds.Contains(p.TicketId)).ToListAsync();
-            var pendedTicketId = pendedTickets.Select(pt => pt.TicketId);
+            var pendedTickets = await context.PendedTicket.Where(p => ttIds.Contains(p.TicketId)).Include(pt => pt.TicketComment).AsSplitQuery().ToListAsync();
+            var pendedTicketIds = pendedTickets.Select(pt => pt.TicketId);
 
-            var dynamicFields = otrsContext.DynamicFieldValue.Where(dfv => pendedTicketId.Contains(dfv.ObjectId))
-              .Include(dfv => dfv.Field).AsSplitQuery();
+            var notValidIds = new List<long>();
+            var validIds = new List<long>();
 
-            var result = otrsTTs.Where(t => pendedTicketId.Contains(t.Id))
-              .Include(t => t.TicketState).AsSplitQuery().Include(t => t.TicketPriority).AsSplitQuery().AsEnumerable().Select(t => {
+            var dynamicFieldsConfigs = await GetDynamicFieldsWithValues();
+
+            var dynamicFields = otrsContext.DynamicFieldValue.Where(dfv => pendedTicketIds.Contains(dfv.ObjectId))
+              .Include(dfv => dfv.Field).AsEnumerable()
+              .Where(dfv => dfv.Field.Label.Equals("Zone of responsibility") ||
+              dfv.Field.Label.Equals("Problem Side") ||
+              dfv.Field.Label.Equals("Type of TT") ||
+              dfv.Field.Label.Equals("Category") ||
+              dfv.Field.Label.Equals("Nat/Int") ||
+              dfv.Field.Label.Equals("Initiator") ||
+              dfv.Field.Label.Equals("Closed time") ||
+              dfv.Field.Label.Equals("Receive Channel") ||
+              dfv.Field.Label.Equals("Confidentality") ||
+              dfv.Field.Label.Equals("Short TT Description") ||
+              dfv.Field.Label.Equals("Direction")).ToList();
+
+            var result = otrsTTs.Where(t => dynamicFields.Select(s => s.ObjectId).Distinct().Contains(t.Id))
+              .Include(t => t.TicketState).AsSplitQuery().Include(t => t.TicketPriority).AsSplitQuery().AsEnumerable().Select(t =>
+              {
                 return new PendedTicketDTO()
                 {
                   TicketId = t.Id,
+                  Title = t.Title,
+                  Comment = pendedTickets.FirstOrDefault(pt => pt.TicketId == t.Id)?.TicketComment,
                   Tn = t.Tn,
                   CreateTime = t.CreateTime,
                   Client = t.CustomerId,
-                  ProblemSide = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("TicketSide"))?.ValueText,
-                  Zone = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("ZoneKey"))?.ValueText.Replace("Key",""),
-                  Type = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("TypeKey"))?.ValueText.Replace("Key", ""),
-                  Description = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("DescriptionKey"))?.ValueText.Replace("Key", ""),
-                  Direction = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("DirectionKey"))?.ValueText.Replace("Key", ""),
-                  NatInt = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("NatIntKey"))?.ValueText.Replace("Key", ""),
-                  Category = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("CategoryKey"))?.ValueText.Replace("Key", ""),
-                  Initiator = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("InitiatorKey"))?.ValueText.Replace("Key", ""),
+
+                  ProblemSide = dynamicFieldsConfigs.ProblemSides
+                  .FirstOrDefault(s => s.Value.Equals(dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("TicketSide"))?.ValueText))?.Label,
+
+                  Zone = dynamicFieldsConfigs.Zones
+                  .FirstOrDefault(s => s.Value.Equals(dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("ZoneKey"))?.ValueText))?.Label,
+
+                  Type = dynamicFieldsConfigs.Types
+                  .FirstOrDefault(s => s.Value.Equals(dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("TypeKey"))?.ValueText))?.Label,
+
+                  Description = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("DescriptionKey"))?.ValueText,
+
+                  Direction = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("DirectionKey"))?.ValueText,
+
+                  NatInt = dynamicFieldsConfigs.NatInts
+                  .FirstOrDefault(s => s.Value.Equals(dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("NatIntKey"))?.ValueText))?.Label,
+
+                  Category = dynamicFieldsConfigs.Categories
+                  .FirstOrDefault(s => s.Value.Equals(dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("CategoryKey"))?.ValueText))?.Label,
+
+                  Initiator = dynamicFieldsConfigs.Initiators
+                  .FirstOrDefault(s => s.Value.Equals(dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.Field.Name.Equals("InitiatorKey"))?.ValueText))?.Label,
+
                   TicketPriority = t.TicketPriority.Name,
                   State = t.TicketState.Name,
                   CloseTime = dynamicFields.FirstOrDefault(d => d.ObjectId == t.Id && d.ValueDate != null)?.ValueDate,
                   Overdue = pendedTickets.FirstOrDefault(pt => pt.TicketId == t.Id).Overdue
                 };
-            });
 
-            return result.OrderByDescending(t => t.CreateTime).ToList();
+              }).Where(t => IsPendedTicketValid(t, filters)).OrderByDescending(t => t.CreateTime).ToList();
+
+            return result;
           }
         }
       }
@@ -723,11 +761,175 @@ namespace OtrsReportApp.Services
         {
           using (var otrsContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
           {
-            var otrsIds = otrsContext.Ticket.Where(t => t.CreateTime >= period.startTime && t.CreateTime <= period.endTime).Select(t => t.Id).ToList(); 
+            var otrsIds = otrsContext.Ticket.Where(t => t.CreateTime >= period.startTime && t.CreateTime <= period.endTime).Select(t => t.Id).ToList();
             return context.PendedTicket.Where(p => otrsIds.Contains(p.TicketId)).Count();
           }
         }
       }
+    }
+
+    public async Task<TicketComment> AddCommentToPnededTicket(CommentDTO commentDto, string commentedBy)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          if (commentDto.CommentId == null)
+          {
+            var comment = context.TicketComment.Add(new()
+            {
+              Comment = commentDto.CommentText,
+              CommentedBy = commentedBy
+            });
+            await context.SaveChangesAsync();
+            var pendedtt = context.PendedTicket.FirstOrDefault(t => t.TicketId == commentDto.PendedTicketId);
+            pendedtt.CommentId = comment.Entity.Id;
+            context.PendedTicket.Update(pendedtt);
+            await context.SaveChangesAsync();
+            commentDto.CommentId = comment.Entity.Id;
+            return comment.Entity;
+          }
+          else
+          {
+            var comment = context.TicketComment.Find(commentDto.CommentId);
+            if (comment != null)
+            {
+              comment.CommentedBy = commentedBy;
+              comment.Comment = commentDto.CommentText;
+              comment.UpdateTime = DateTime.Now;
+              context.TicketComment.Update(comment);
+              await context.SaveChangesAsync();
+              var pendedtt = context.PendedTicket.FirstOrDefault(t => t.TicketId == commentDto.PendedTicketId);
+              pendedtt.CommentId = comment.Id;
+              context.PendedTicket.Update(pendedtt);
+              await context.SaveChangesAsync();
+            }
+            return comment;
+          }
+        }
+      }
+    }
+
+    public async Task<FilteringItems> GetDynamicFieldsWithValues()
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+        {
+          var dynamicFieldsLabels = new List<string>(new string[] {
+            "Problem Side",
+            "Zone of responsibility",
+            "Type of TT",
+            "Nat/Int",
+            "Initiator",
+            "Category"});
+
+          var filteringItems = new FilteringItems();
+
+          var result = await context.DynamicField.Where(df => dynamicFieldsLabels.Contains(df.Label)).ToListAsync();
+          var str = String.Empty;
+          foreach (var df in result)
+          {
+            switch (df.Label)
+            {
+              case "Problem Side":
+                {
+                  var con = System.Text.Encoding.Default.GetString(df.Config);
+                  filteringItems.ProblemSides = ConfigToSelectItems(con);
+                  break;
+                }
+              case "Zone of responsibility":
+                {
+                  var con = System.Text.Encoding.Default.GetString(df.Config);
+                  filteringItems.Zones = ConfigToSelectItems(con);
+                  break;
+
+                }
+              case "Type of TT":
+                {
+                  var con = System.Text.Encoding.Default.GetString(df.Config);
+                  filteringItems.Types = ConfigToSelectItems(con);
+                  break;
+
+                }
+              case "Nat/Int":
+                {
+                  var con = System.Text.Encoding.Default.GetString(df.Config);
+                  filteringItems.NatInts = ConfigToSelectItems(con);
+                  break;
+
+                }
+              case "Initiator":
+                {
+                  var con = System.Text.Encoding.Default.GetString(df.Config);
+                  filteringItems.Initiators = ConfigToSelectItems(con);
+                  break;
+
+                }
+              case "Category":
+                {
+                  var con = System.Text.Encoding.Default.GetString(df.Config);
+                  filteringItems.Categories = ConfigToSelectItems(con);
+                  break;
+                }
+            }
+          }
+          return filteringItems;
+        }
+      }
+    }
+
+    private bool IsPendedTicketValid(PendedTicketDTO dto, Filters filters)
+    {
+      var zones = filters.Zones;
+      var types = filters.Types;
+      var initiators = filters.Initiators;
+      var natInts = filters.NatInts;
+      var catogories = filters.Categories;
+      var problemSides = filters.ProblemSides;
+
+      if (zones?.Length > 0 && !zones.Contains(dto.Zone))
+      {
+        return false;
+      }
+      if (types?.Length > 0 && !types.Contains(dto.Type))
+      {
+        return false;
+      }
+      if (initiators?.Length > 0 && !initiators.Contains(dto.Initiator))
+      {
+        return false;
+      }
+      if (natInts?.Length > 0 && !natInts.Contains(dto.NatInt))
+      {
+        return false;
+      }
+      if (catogories?.Length > 0 && !catogories.Contains(dto.Category))
+      {
+        return false;
+      }
+      if (problemSides?.Length > 0 && !problemSides.Contains(dto.ProblemSide))
+      {
+        return false;
+      }
+      return true;
+
+    }
+
+    private IEnumerable<SelectItem> ConfigToSelectItems(string config)
+    {
+      var selectItems = new List<SelectItem>();
+      var newLine = "\n";
+      var pattern = @"(?<=PossibleValues:\n)((?s).*)(?=TranslatableValues:)";
+      var match = Regex.Match(config, pattern).Value;
+      var possibleValues = match.Split(newLine);
+      foreach (var value in possibleValues)
+      {
+        if (String.IsNullOrEmpty(value.Trim())) continue;
+        var keyValuePair = value.Trim().Split(":");
+        selectItems.Add(new SelectItem { Label = keyValuePair[1], Value = keyValuePair[0] });
+      }
+      return selectItems;
     }
   }
 }

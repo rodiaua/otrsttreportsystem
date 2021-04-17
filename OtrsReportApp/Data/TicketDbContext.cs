@@ -17,11 +17,18 @@ namespace OtrsReportApp.Data
 
     public virtual DbSet<PendedTicket> PendedTicket { get; set; }
 
+    public virtual DbSet<TicketComment> TicketComment { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder) {
       base.OnModelCreating(builder);
 
       builder.Entity<AcknowledgedTicket>().ToTable("acknowledged_ticket").HasKey(t => t.Id);
-      builder.Entity<PendedTicket>().ToTable("pended_ticket").HasKey(t => t.Id);
+      builder.Entity<PendedTicket>(entity => {
+        entity.HasKey("Id", "TicketId");
+        entity.HasIndex(pt => pt.TicketId).IsUnique();
+        entity.ToTable("pended_ticket");
+      });
+      builder.Entity<TicketComment>().ToTable("ticket_comment");
     }
   }
 }

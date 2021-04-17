@@ -1,5 +1,6 @@
 export interface PendedTicket{
     ticketId: number,
+    title: string,
     tn: string,
     createTime: number,
     client: string,
@@ -14,5 +15,13 @@ export interface PendedTicket{
     initiator: string,
     ticketPriority: string,
     closeTime: number,
-    overdue: number
+    overdue: number,
+    comment: TicketComment
+}
+
+export interface TicketComment{
+    id: number,
+    comment: string,
+    commentedBy: string,
+    updateTime: number
 }

@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OtrsReportApp.Data;
 
 namespace OtrsReportApp.Migrations.TicketDb
 {
     [DbContext(typeof(TicketDbContext))]
-    partial class TicketDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210415101205_Comment1")]
+    partial class Comment1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -46,7 +48,7 @@ namespace OtrsReportApp.Migrations.TicketDb
                     b.Property<long>("TicketId")
                         .HasColumnType("bigint");
 
-                    b.Property<int?>("CommentId")
+                    b.Property<int>("CommentId")
                         .HasColumnType("int");
 
                     b.Property<int>("Overdue")
@@ -55,9 +57,6 @@ namespace OtrsReportApp.Migrations.TicketDb
                     b.HasKey("Id", "TicketId");
 
                     b.HasIndex("CommentId");
-
-                    b.HasIndex("TicketId")
-                        .IsUnique();
 
                     b.ToTable("pended_ticket");
                 });
@@ -88,7 +87,9 @@ namespace OtrsReportApp.Migrations.TicketDb
                 {
                     b.HasOne("OtrsReportApp.Models.OtrsTicket.TicketComment", "TicketComment")
                         .WithMany()
-                        .HasForeignKey("CommentId");
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("TicketComment");
                 });

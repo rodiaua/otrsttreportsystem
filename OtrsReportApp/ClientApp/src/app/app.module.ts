@@ -24,6 +24,9 @@ import { TagModule } from 'primeng/tag';
 import {ScrollPanelModule} from 'primeng/scrollpanel';
 import {ProgressBarModule} from 'primeng/progressbar';
 import {SelectButtonModule} from 'primeng/selectbutton';
+import {DialogModule} from 'primeng/dialog';
+import {InputTextareaModule} from 'primeng/inputtextarea';
+import {OverlayPanelModule} from 'primeng/overlaypanel';
 
 
 import { AppRoutingModule } from './app-routing.module';
@@ -64,6 +67,9 @@ import { NgxDaterangepickerMd } from 'ngx-daterangepicker-material';
     PendedTicketComponent,
   ],
   imports: [
+    OverlayPanelModule,
+    InputTextareaModule,
+    DialogModule,
     SelectButtonModule,
     ProgressBarModule,
     ScrollPanelModule,

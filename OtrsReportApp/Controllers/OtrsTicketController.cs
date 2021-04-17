@@ -154,9 +154,9 @@ namespace OtrsReportApp.Controllers
 
     [HttpPost("[action]")]
     [Authorize(Roles = "Admin,User")]
-    public async Task<List<PendedTicketDTO>> GetPendedTickets([FromBody]Period period)
+    public async Task<List<PendedTicketDTO>> GetPendedTickets([FromBody] Filters filters)
     {
-      return await _otrsServcie.GetPendedTickets(period);
+      return await _otrsServcie.GetPendedTickets(filters);
     }
 
     [HttpPost("[action]")]
@@ -164,6 +164,23 @@ namespace OtrsReportApp.Controllers
     public int TotalPendedTickets([FromBody] Period period)
     {
       return _otrsServcie.TotalPendedTickets(period);
+    }
+
+    [HttpPost("[action]")]
+    [Authorize(Roles = "Admin,User")]
+
+    public async Task<TicketComment> AddCommentToPnededTicket([FromBody] CommentDTO comment)
+    {
+      var userId = User.Claims.First(c => c.Type.Equals("userId")).Value;
+      var user = await _userManager.FindByIdAsync(userId);
+      return await _otrsServcie.AddCommentToPnededTicket(comment, user.FirstName + " " + user.LastName + " (" + user.Email + ")");
+    }
+
+    [HttpGet("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public async Task<FilteringItems> GetDynamicFieldsWithValues()
+    {
+      return await _otrsServcie.GetDynamicFieldsWithValues();
     }
 
   }

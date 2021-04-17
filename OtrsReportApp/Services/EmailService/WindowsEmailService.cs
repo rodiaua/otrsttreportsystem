@@ -24,6 +24,7 @@ namespace OtrsReportApp.Services.EmailService
       smtp.Connect("smtp.ethereal.email", 587, SecureSocketOptions.StartTls);
       smtp.Authenticate("ruby34@ethereal.email", "V9NhZsUnzmJ9FTkP44");
       await smtp.SendAsync(email);
+      Console.WriteLine($"To: ruby34@ethereal.email\nSent: {body}");
       smtp.Disconnect(true);
     }
   }

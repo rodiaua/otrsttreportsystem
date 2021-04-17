@@ -9,7 +9,8 @@ import { Report } from '../models/dto/report';
 import { LogItem } from "../models/log-item";
 import {OtrsTicket} from "../models/otrs-ticket";
 import { AcknowledgedTicket } from "../models/acknowledgedTicket";
-import {PendedTicket} from "../models/pended-ticket"
+import {PendedTicket, TicketComment} from "../models/pended-ticket"
+import { CommentDto } from "../models/dto/commentDto";
 
 
 @Injectable({ providedIn: 'root' })
@@ -62,12 +63,20 @@ export class OtrsTTService{
         return this.http.post(`${this.domain}/savePendedTicket`,{id:0, ticketId, overdue}).toPromise();
     }
 
-    getPendedTickets(period: Period){
-        return this.http.post<PendedTicket[]>(`${this.domain}/getPendedTickets`,period).toPromise();
+    getPendedTickets(filter: Filters){
+        return this.http.post<PendedTicket[]>(`${this.domain}/getPendedTickets`,filter).toPromise();
     }
 
-    getPendedTicketsTotal(period: Period){
-        return this.http.post<number>(`${this.domain}/totalPendedTickets`,period).toPromise();
+    getPendedTicketsTotal(filter: Filters){
+        return this.http.post<number>(`${this.domain}/totalPendedTickets`,filter).toPromise();
+    }
+
+    addCommentToTicket(comment: CommentDto){
+        return this.http.post<TicketComment>(`${this.domain}/addCommentToPnededTicket`,comment).toPromise();
+    }
+
+    getDynamicFieldsWithValues(){
+        return this.http.get<FilteringItems>(`${this.domain}/getDynamicFieldsWithValues`).toPromise();
     }
 
 

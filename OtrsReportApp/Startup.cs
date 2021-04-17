@@ -125,6 +125,7 @@ namespace OtrsReportApp
 
       if (env.IsDevelopment())
       {
+        //app.Debug();
         app.UseDeveloperExceptionPage();
       }
       else

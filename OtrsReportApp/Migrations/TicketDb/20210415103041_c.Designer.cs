@@ -9,8 +9,8 @@ using OtrsReportApp.Data;
 namespace OtrsReportApp.Migrations.TicketDb
 {
     [DbContext(typeof(TicketDbContext))]
-    [Migration("20210325171614_PendedTicket")]
-    partial class PendedTicket
+    [Migration("20210415103041_c")]
+    partial class c
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -28,6 +28,9 @@ namespace OtrsReportApp.Migrations.TicketDb
                     b.Property<DateTime>("CreateTime")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<string>("NatInt")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
                     b.Property<long>("TicketId")
                         .HasColumnType("bigint");
 
@@ -42,15 +45,51 @@ namespace OtrsReportApp.Migrations.TicketDb
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("Overdue")
-                        .HasColumnType("int");
-
                     b.Property<long>("TicketId")
                         .HasColumnType("bigint");
 
-                    b.HasKey("Id");
+                    b.Property<int?>("CommentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Overdue")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id", "TicketId");
+
+                    b.HasIndex("CommentId");
 
                     b.ToTable("pended_ticket");
+                });
+
+            modelBuilder.Entity("OtrsReportApp.Models.OtrsTicket.TicketComment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500) CHARACTER SET utf8mb4");
+
+                    b.Property<string>("CommentedBy")
+                        .IsRequired()
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<DateTime?>("UpdateTime")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ticket_comment");
+                });
+
+            modelBuilder.Entity("OtrsReportApp.Models.OtrsTicket.PendedTicket", b =>
+                {
+                    b.HasOne("OtrsReportApp.Models.OtrsTicket.TicketComment", "TicketComment")
+                        .WithMany()
+                        .HasForeignKey("CommentId");
+
+                    b.Navigation("TicketComment");
                 });
 #pragma warning restore 612, 618
         }

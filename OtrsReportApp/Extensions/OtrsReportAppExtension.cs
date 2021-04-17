@@ -21,6 +21,17 @@ namespace OtrsReportApp.Extensions
   public static class OtrsReportAppExtension
   {
 
+    public static IApplicationBuilder Debug(this IApplicationBuilder app)
+    {
+      var provider = app.ApplicationServices;
+      using (var scope = provider.CreateScope())
+      {
+        var service = scope.ServiceProvider.GetRequiredService<OtrsTicketService>();
+        service.GetDynamicFieldsWithValues();
+      }
+      return app;
+    }
+
     public static IApplicationBuilder RunBackgroundTask(this IApplicationBuilder app)
     {
       var provider = app.ApplicationServices;

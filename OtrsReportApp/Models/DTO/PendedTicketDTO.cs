@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using OtrsReportApp.Models.Converters;
+using OtrsReportApp.Models.OtrsTicket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace OtrsReportApp.Models.DTO
   public class PendedTicketDTO
   {
     public long TicketId { get; set; }
+    public string Title { get; set; }
     public string Tn { get; set; }
     [JsonConverter(typeof(EpochConverter))]
     public DateTime CreateTime { get; set; }
@@ -27,5 +29,6 @@ namespace OtrsReportApp.Models.DTO
     [JsonConverter(typeof(EpochConverter))]
     public DateTime? CloseTime { get; set; }
     public int Overdue { get; set; }
+    public TicketComment Comment { get; set; }
   }
 }

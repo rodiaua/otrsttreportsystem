@@ -1,21 +1,59 @@
+<p-overlayPanel (onHide)="onHideHandle()"#filters>
+    <ng-template pTemplate>
+        <h3>Filters</h3>
+        <label style="display: table-cell; padding-top: 5px;" for="zone">Zones</label>
+        <p-multiSelect id="zones" [options]="zones" [(ngModel)]="selectedZones" defaultLabel="Select a City" optionLabel="label"
+            display="chip"></p-multiSelect>
+            <label style="display: table-cell; padding-top: 5px;" for="type">Types</label>
+        <p-multiSelect id="types" [options]="types" [(ngModel)]="selectedTypes" defaultLabel="Select a City" optionLabel="label"
+            display="chip"></p-multiSelect>
+            <label style="display: table-cell; padding-top: 5px;" for="problemSides">Problem Sides</label>
+        <p-multiSelect id="problemSides" [options]="problemSides" [(ngModel)]="selectedProblemSides" defaultLabel="Select a City" optionLabel="label"
+            display="chip"></p-multiSelect>
+            <label style="display: table-cell; padding-top: 5px;" for="initiators">Initiators</label>
+        <p-multiSelect id="initiators" [options]="initiators" [(ngModel)]="selectedInitiators" defaultLabel="Select a City" optionLabel="label"
+            display="chip"></p-multiSelect>
+            <label style="display: table-cell; padding-top: 5px;" for="natInts">NatInt</label>
+        <p-multiSelect id="natInts" [options]="natInts" [(ngModel)]="selectedNatInts" defaultLabel="Select a City" optionLabel="label"
+            display="chip"></p-multiSelect>
+    </ng-template>
+</p-overlayPanel>
+<p-dialog header="Comment" [(visible)]="displayComment">
+    <div>
+        <p><b>Commented by:</b> {{editingPendedTicket?.comment?.commentedBy}}</p>
+        <p><b>Time:</b> {{epochToString(editingPendedTicket?.comment?.updateTime)}}</p>
+        <textarea pInputTextarea [rows]="7" [cols]="75" [(ngModel)]="commentText"></textarea>
+    </div>
+    <div>
+        <button style="float: left;" label="Save" (click)="saveCommentHandle()" pButton type="button"></button>
+        <button style="float: right;" label="Cancel" (click)="cancelCommentHandle()" pButton type="button"></button>
+    </div>
+</p-dialog>
 <div class="container-fluid">
     <div class="card">
         <p-progressBar *ngIf="loadingInProcess" mode="indeterminate" [style]="{'height': '6px'}"></p-progressBar>
         <div class="card-header">
-            <label for="calendar" style="display: table-cell;">Time Range</label>
-            <input style="width: 20rem;" id="calendar" type="text" ngxDaterangepickerMd [(ngModel)]="timeRange"
-                timePicker24Hour="true" timePicker="true" [locale]="{format: 'DD/MM/YYYY HH:mm:ss'}" [ranges]="ranges"
-                alwaysShowCalendars="true" autocomplete="off" (datesUpdated)="getPendedTickets()" />
+            <div style="float: left;">
+                <label for="calendar" style="display: table-cell;">Time Range</label>
+                <input style="width: 20rem;" id="calendar" type="text" ngxDaterangepickerMd [(ngModel)]="timeRange"
+                    timePicker24Hour="true" timePicker="true" [locale]="{format: 'DD/MM/YYYY HH:mm:ss'}"
+                    [ranges]="ranges" alwaysShowCalendars="true" autocomplete="off"
+                    (datesUpdated)="getPendedTickets()" />
+            </div>
+
+            <div style="float: right; padding-top: 0.5rem">
+                <button pButton pRipple type="button" icon="pi pi-filter-slash" (click)="filters.toggle($event)"
+                    class="p-button-rounded p-button-secondary p-button-outlined"></button>
+            </div>
         </div>
         <div class="card-body" *ngIf="!loadingInProcess">
             <p-table *ngIf="pendedTickets.length > 0" [value]="pendedTickets" [totalRecords]="totalTickets"
-                styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [rows]="10" 
-                [showCurrentPageReport] = "true"
-                currentPageReportTemplate="Total records {{totalTickets}}" [rowsPerPageOptions]="[10,20,40]"
-                [paginator]="true">
+                styleClass="p-datatable-sm p-datatable-gridlines p-datatable-striped" [rows]="10"
+                [showCurrentPageReport]="true" currentPageReportTemplate="Total records {{totalTickets}}"
+                [rowsPerPageOptions]="[10,20,40]" [paginator]="true">
                 <ng-template pTemplate="header">
                     <tr>
-                        <th>Tn</th>
+                        <!-- <th>Tn</th> -->
                         <th>Create Time</th>
                         <th>Client</th>
                         <th>Problem Side</th>
@@ -33,11 +71,22 @@
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-pendedTicket>
-                    <tr style="font-size: 13px;">
-                        <td>
-                            <a target="_blank" rel="noopener noreferrer"
-                                href="http://otrs.gmsu.ua/otrs/index.pl?Action=AgentTicketZoom;TicketID={{pendedTicket.ticketId}}">{{pendedTicket.tn}}</a>
+                    <tr>
+                        <td colspan="14" style="font-size:18px">
+
+                            <div style="float: left;">
+                                [<a style="color: black;" target="_blank" rel="noopener noreferrer"
+                                    href="http://otrs.gmsu.ua/otrs/index.pl?Action=AgentTicketZoom;TicketID={{pendedTicket.ticketId}}">{{pendedTicket.tn}}</a>]
+                                <b>{{pendedTicket.title}}</b>
+                            </div>
+                            <div style="float: right;">
+                                <button [ngStyle]="{'color': isTicketCommented(pendedTicket)}" pButton pRipple
+                                    type="button" (click)="toggleComments(pendedTicket)" icon="pi pi-comments"
+                                    class="p-button-rounded p-button-secondary p-button-outlined"></button>
+                            </div>
                         </td>
+                    </tr>
+                    <tr style="font-size: 13px;">
                         <td>
                             {{epochToString(pendedTicket.createTime)}}
                         </td>
