@@ -1,5 +1,6 @@
 import { stringify } from '@angular/compiler/src/util';
 import { Component, OnInit } from '@angular/core';
+import * as FileSaver from 'file-saver';
 import * as moment from 'moment';
 import { Moment } from 'moment';
 import { SelectItem } from 'primeng/api';
@@ -45,6 +46,8 @@ export class PendedTicketComponent implements OnInit {
   selectedCategories: SelectItem<string>[];
   selectedProblemSides: SelectItem<string>[];
 
+  downloading = false;
+
   ranges: any = {
     'Today': [moment().startOf('day'), moment()],
     'Yesterday': [moment().subtract(1, 'days').startOf('day'), moment().subtract(1, 'days').endOf("day")],
@@ -54,6 +57,8 @@ export class PendedTicketComponent implements OnInit {
     'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
     'This Year': [moment().startOf('year'), moment().endOf('year')]
   }
+
+  
 
   constructor(private otrsService: OtrsTTService) { }
 
@@ -140,6 +145,15 @@ export class PendedTicketComponent implements OnInit {
       problemSides: this.selectedProblemSides?.map(problemSide => problemSide.label)
     };
     return filters;
+  }
+
+  async exportExcel() {
+    this.downloading  = true;
+    let filename = `pended_tickets_${moment.now()}.xlsx`;
+    this.otrsService.downloadPendedTicketReport(this.createFilter()).subscribe(resultBlob => {
+      FileSaver.saveAs(resultBlob, filename);
+      this.downloading = false;
+    });;
   }
 
 

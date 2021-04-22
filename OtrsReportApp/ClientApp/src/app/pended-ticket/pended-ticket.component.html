@@ -2,19 +2,19 @@
     <ng-template pTemplate>
         <h3>Filters</h3>
         <label style="display: table-cell; padding-top: 5px;" for="zone">Zones</label>
-        <p-multiSelect id="zones" [options]="zones" [(ngModel)]="selectedZones" defaultLabel="Select a City" optionLabel="label"
+        <p-multiSelect id="zones" [options]="zones" [(ngModel)]="selectedZones" defaultLabel="Select" optionLabel="label"
             display="chip"></p-multiSelect>
             <label style="display: table-cell; padding-top: 5px;" for="type">Types</label>
-        <p-multiSelect id="types" [options]="types" [(ngModel)]="selectedTypes" defaultLabel="Select a City" optionLabel="label"
+        <p-multiSelect id="types" [options]="types" [(ngModel)]="selectedTypes" defaultLabel="Select" optionLabel="label"
             display="chip"></p-multiSelect>
             <label style="display: table-cell; padding-top: 5px;" for="problemSides">Problem Sides</label>
-        <p-multiSelect id="problemSides" [options]="problemSides" [(ngModel)]="selectedProblemSides" defaultLabel="Select a City" optionLabel="label"
+        <p-multiSelect id="problemSides" [options]="problemSides" [(ngModel)]="selectedProblemSides" defaultLabel="Select" optionLabel="label"
             display="chip"></p-multiSelect>
             <label style="display: table-cell; padding-top: 5px;" for="initiators">Initiators</label>
-        <p-multiSelect id="initiators" [options]="initiators" [(ngModel)]="selectedInitiators" defaultLabel="Select a City" optionLabel="label"
+        <p-multiSelect id="initiators" [options]="initiators" [(ngModel)]="selectedInitiators" defaultLabel="Select" optionLabel="label"
             display="chip"></p-multiSelect>
             <label style="display: table-cell; padding-top: 5px;" for="natInts">NatInt</label>
-        <p-multiSelect id="natInts" [options]="natInts" [(ngModel)]="selectedNatInts" defaultLabel="Select a City" optionLabel="label"
+        <p-multiSelect id="natInts" [options]="natInts" [(ngModel)]="selectedNatInts" defaultLabel="Select" optionLabel="label"
             display="chip"></p-multiSelect>
     </ng-template>
 </p-overlayPanel>
@@ -42,6 +42,11 @@
             </div>
 
             <div style="float: right; padding-top: 0.5rem">
+                <div style="margin-right: 10px; display: inline;">
+                    <i *ngIf="downloading" class="pi pi-spin pi-spinner" style="font-size: 1.5rem"></i>
+                    <button *ngIf="!downloading && pendedTickets?.length > 0" pButton pRipple type="button" icon="pi pi-save" (click)="exportExcel()"
+                        class="p-button-rounded p-button-secondary p-button-outlined"></button>
+                </div>
                 <button pButton pRipple type="button" icon="pi pi-filter-slash" (click)="filters.toggle($event)"
                     class="p-button-rounded p-button-secondary p-button-outlined"></button>
             </div>

@@ -46,3 +46,12 @@
     }
 
 }    
+
+:host ::ng-deep .p-multiselect.p-multiselect-chip .p-multiselect-token{
+    float: left;
+    margin-top: 5px;
+}   
+
+:host ::ng-deep .p-multiselect {
+    width: 400px;
+}

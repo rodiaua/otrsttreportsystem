@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { OtrsTTService } from '../services/otrs-tt-service';
 import { LoggingHubService } from '../services/logging-hub.service'
 import { LogItem } from '../models/log-item';
@@ -8,6 +8,10 @@ import * as momentTimezone from 'moment-timezone';
 import { OtrsTicket } from '../models/otrs-ticket';
 import { timer } from 'rxjs';
 import { AcknowledgedTicket } from '../models/acknowledgedTicket';
+import { Queue } from '../models/queue';
+import { MultiSelect } from 'primeng/multiselect';
+import { OverlayPanel } from 'primeng/overlaypanel';
+import { UserService } from '../services/user.service';
 
 
 
@@ -27,6 +31,11 @@ export class PendingTicketsComponent implements OnInit, OnDestroy {
   pendedTicketsOpened = false;
   isLoading = false;
 
+  queues: Queue[];
+  
+  selectedQueue: Queue[];
+
+  @ViewChild('settings') settings:OverlayPanel; 
 
   natIntTypes = [
     { name: "National", key: "NationalKey"},
@@ -36,10 +45,14 @@ export class PendingTicketsComponent implements OnInit, OnDestroy {
 
   natIntSelected: { name: string, key:string } = { name: "International", key:"InternationalKey" };
 
-  constructor(private otrsService: OtrsTTService, private logService: LoggingHubService) { }
+  constructor(private otrsService: OtrsTTService, private logService: LoggingHubService, private userService: UserService) { }
   ngOnDestroy(): void {
     this.logService.disconnect();
     this.loadDataInBackground = false;
+  }
+
+  get isAdmin(){
+    return this.userService.getUserRole() === "Admin";
   }
 
   async onSelectedHandle(event){
@@ -59,18 +72,36 @@ export class PendingTicketsComponent implements OnInit, OnDestroy {
     this.startLoadDataInBackground();
   }
 
+  async onSaveSettings(){
+    this.settings.hide();
+    this.otrsService.savePendingTicketRestrictedQueues(this.selectedQueue).then(async () => {this.isLoading = true;
+      await this.getTickets();
+      this.isLoading = false;
+    });
+  }
+
+  async onSettingsClickHandle(event){
+    this.settings.toggle(event);
+    this.queues = await this.otrsService.getQueues();
+    this.selectedQueue = await this.otrsService.getPendingTicketRestrictedQueues();
+  }
+
   delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   async startLoadDataInBackground() {
     while (this.loadDataInBackground) {
+      await this.getTickets();
+      await this.delay(1000 * 60);
+    }
+  }
+
+  async getTickets(){
       this.list1 = await this.otrsService.getPendingTickets(this.natIntSelected.key);
       this.list1.sort((a, b) => moment.utc(a.createTime).valueOf() - moment.utc(b.createTime).valueOf());
       this.list2 = await this.otrsService.getAcknowledgedTickets(this.natIntSelected.key);
       this.list2.sort((a, b) => moment.utc(a.createTime).valueOf() - moment.utc(b.createTime).valueOf());
-      await this.delay(1000 * 60);
-    }
   }
 
   onMoveToTargetHandle(event) {

@@ -1,10 +1,30 @@
+<p-overlayPanel #settings>
+    <h3>Settings</h3>
+    <label style="display: table-cell; padding-top: 5px;" for="queues">Restrict Queues</label>
+    <p-multiSelect id="queues" [options]="queues" [(ngModel)]="selectedQueue"
+        defaultLabel="Select" optionLabel="name" display="chip"></p-multiSelect>
+        <div >
+            <button pButton pRipple type="button" label="Save"
+             (click)="onSaveSettings()"
+             style="float: left; margin-top: 10px; margin-bottom: 10px;"></button>    
+            <button pButton pRipple type="button" label="Cancel"
+             (click)="settings.hide()" style="float: right; margin-top: 10px; margin-bottom: 10px;"></button>  
+        </div>
+</p-overlayPanel>
 <div style="margin-top: 10px;">
     <p-tabView (onChange)="onChangeHandle($event)">
         <p-tabPanel header="Pending Tickets">
             <div class="card">
                 <p-progressBar *ngIf="isLoading" mode="indeterminate" [style]="{'height': '6px'}"></p-progressBar>
                 <div class="card-header">
-                    <p-selectButton [options]="natIntTypes" [(ngModel)]="natIntSelected" optionLabel="name" (onChange)="onSelectedHandle($event)"></p-selectButton>
+                    <div style="float: left;">
+                        <p-selectButton [options]="natIntTypes" [(ngModel)]="natIntSelected" optionLabel="name"
+                            (onChange)="onSelectedHandle($event)"></p-selectButton>
+                    </div>
+                    <div style="float:right">
+                        <button *ngIf="isAdmin" pButton pRipple type="button" label="Settings"
+                            class="p-button-outlined p-button-secondary" (click)="onSettingsClickHandle($event)"></button>
+                    </div>
                 </div>
                 <div class=" card-body">
                     <p-pickList [source]="list1" [target]="list2" sourceHeader="Pending Tickets"
@@ -12,18 +32,18 @@
                         [targetStyle]="{'max-height':'700px'}" [showSourceControls]="false" [showTargetControls]="false"
                         (onMoveToTarget)="onMoveToTargetHandle($event)" (onMoveToSource)="onMoveToSourceHandle($event)"
                         (onMoveAllToTarget)="onMoveAllToTargetHandle($event)"
-                        (onMoveAllToSource)="onMoveAllToSourceHandle($event)" >
+                        (onMoveAllToSource)="onMoveAllToSourceHandle($event)">
                         <ng-template let-tt pTemplate="item">
-                                <div>
-                                    <a>[TT#{{tt.tn}}] ({{tt.natInt.substring(0,3)}}) {{tt.title}}</a>
+                            <div>
+                                <a>[TT#{{tt.tn}}] ({{tt.natInt.substring(0,3)}}) {{tt.title}}</a>
+                            </div>
+                            <div style="margin-top: 1rem; display: flex;">
+                                <a>{{isoTimeToDateTime(tt.createTime)}}</a>
+                                <div class="ml-auto">
+                                    <p-tag severity="{{getSeverity(tt)}}">Overdue: {{getTicketOverdueInMinutes(tt)}}
+                                        minutes</p-tag>
                                 </div>
-                                <div style="margin-top: 1rem; display: flex;">
-                                    <a>{{isoTimeToDateTime(tt.createTime)}}</a>
-                                    <div class="ml-auto">
-                                        <p-tag severity="{{getSeverity(tt)}}">Overdue: {{getTicketOverdueInMinutes(tt)}}
-                                            minutes</p-tag>
-                                    </div>
-                                </div>
+                            </div>
                         </ng-template>
                     </p-pickList>
                 </div>

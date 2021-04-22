@@ -183,5 +183,47 @@ namespace OtrsReportApp.Controllers
       return await _otrsServcie.GetDynamicFieldsWithValues();
     }
 
+
+    [HttpPost("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public async Task<FileStreamResult> DownloadPendedTicketReport(Filters filters)
+    {
+      return await _otrsServcie.DownloadPendedTicketReport(filters);
+    }
+
+    [HttpGet("[action]")]
+    [Authorize(Roles = "Admin")]
+    public IEnumerable<QueueDTO> GetQueues()
+    {
+      return _otrsServcie.GetQueues();
+    }
+    [HttpPost("[action]")]
+    [Authorize(Roles = "Admin")]
+    public async Task SavePendingTicketRestrictedQueues([FromBody] List<QueueDTO> queues)
+    {
+      await _otrsServcie.SavePendingTicketRestrictedQueues(queues);
+    }
+
+    /*[HttpPost("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public async Task AddPendingTicketRestrictedQueues([FromBody]List<QueueDTO> queues)
+    {
+
+    }*/
+
+    /*[HttpPost("[action]")]
+    [Authorize(Roles = "Admin,User")]
+    public async Task RemovePendingTicketRestrictedQueues([FromBody]List<QueueDTO> queues)
+    {
+
+    }*/
+
+    [HttpGet("[action]")]
+    [Authorize(Roles = "Admin")]
+    public IEnumerable<QueueDTO> GetPendingTicketRestrictedQueues()
+    {
+      return _otrsServcie.GetPendingTicketRestrictedQueues();
+    }
+
   }
 }

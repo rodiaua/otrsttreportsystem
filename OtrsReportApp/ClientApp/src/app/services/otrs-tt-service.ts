@@ -11,6 +11,7 @@ import {OtrsTicket} from "../models/otrs-ticket";
 import { AcknowledgedTicket } from "../models/acknowledgedTicket";
 import {PendedTicket, TicketComment} from "../models/pended-ticket"
 import { CommentDto } from "../models/dto/commentDto";
+import { Queue } from "../models/queue";
 
 
 @Injectable({ providedIn: 'root' })
@@ -77,6 +78,22 @@ export class OtrsTTService{
 
     getDynamicFieldsWithValues(){
         return this.http.get<FilteringItems>(`${this.domain}/getDynamicFieldsWithValues`).toPromise();
+    }
+
+    downloadPendedTicketReport(filters: Filters){
+        return this.http.post(`${this.domain}/downloadPendedTicketReport`, filters, {responseType: 'blob'});
+    }
+
+    getQueues(){
+        return this.http.get<Queue[]>(`${this.domain}/getQueues`).toPromise();
+    }
+
+    getPendingTicketRestrictedQueues(){
+        return this.http.get<Queue[]>(`${this.domain}/getPendingTicketRestrictedQueues`).toPromise();
+    }
+
+    savePendingTicketRestrictedQueues(queues: Queue[]){
+        return this.http.post(`${this.domain}/savePendingTicketRestrictedQueues`, queues).toPromise();
     }
 
 

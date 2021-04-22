@@ -13,6 +13,11 @@ namespace OtrsReportApp.Constants
 
   public enum TicketQueue
   {
-    Trash = 31
+    Trash = 31,
+    TestingVas = 38,
+    TestingOperators = 39,
+    TestingBut = 32,
+    TestingSurvay = 42,
+    TestingDaily = 52
   }
 }

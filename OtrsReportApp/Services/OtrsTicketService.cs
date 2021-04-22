@@ -24,6 +24,7 @@ using OtrsReportApp.Models.Logging;
 using Microsoft.AspNetCore.Http.Connections;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authentication;
 
 namespace OtrsReportApp.Services
 {
@@ -430,46 +431,54 @@ namespace OtrsReportApp.Services
       {
         using (var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
         {
-          var ackTicketsIds = (await GetAcknowledgedTickets(type)).Select(x => x.Id);
-
-          var result = await context.Ticket.AsSplitQuery().Where(tt => tt.TicketStateId == (short)State.Open && tt.QueueId != (int)TicketQueue.Trash &&
-                        context.DynamicFieldValue.AsSplitQuery()
-                        .Where(dfv => type.Equals("All") ? dfv.ValueText.Equals("NationalKey") || dfv.ValueText.Equals("InternationalKey") : dfv.ValueText.Equals(type))
-                        .Select(dfv => dfv.ObjectId).Contains(tt.Id)
-                        && !ackTicketsIds.Contains(tt.Id)).Where(tt => context.DynamicFieldValue.AsSplitQuery().
-                        Where(dfv => dfv.ValueText.Equals("ClientKey")).Select(dfv => dfv.ObjectId).Contains(tt.Id))
-                        .Include(tt => tt.Article).AsSplitQuery().ToListAsync();
-
-          var dynamicFiledValues = await context.DynamicFieldValue.Include(dfv => dfv.Field).AsSplitQuery()
-                                  .Where(dfv => result.Select(t => t.Id).Contains(dfv.ObjectId) && dfv.Field.Label.Equals("Nat/Int")).ToListAsync();
-
-          var otrsTicketDTOs = result.Where(tt => TicketIsPending(tt.Article)).Select(t =>
+          using (var ticketContext = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
           {
-            return new OtrsTicketDTO()
-            {
-              Id = t.Id,
-              Tn = t.Tn,
-              Title = t.Title,
-              NatInt = dynamicFiledValues.Where(dfv => dfv.ObjectId == t.Id).ToList().FirstOrDefault()?.ValueText,
-              CreateTime = t.Article.
-              Where(a => a.ArticleTypeId == (short)ArticleType.ExternalEmail && a.ArticleSenderTypeId == (short)ArticalSenderType.Customer)
-              .Select(a => a.CreateTime)
-              .OrderByDescending(a => a)
-              .First()
-              .ToUniversalTime()
-            };
-          }).OrderByDescending(x => x.CreateTime);
 
-          await SavePendedTickets(otrsTicketDTOs.Select(t =>
-          {
-            return new PendedTicket()
-            {
-              TicketId = t.Id,
-              Overdue = (int)((((TimeSpan)(DateTime.UtcNow - t.CreateTime)).TotalSeconds) / 60)
-            };
-          }).ToList());
+            var restrictedQueues = await ticketContext.PendingTicketRestrictedQueue.Select(s => s.QueueId).ToListAsync();
+            var ackTicketsIds = (await GetAcknowledgedTickets(type)).Select(x => x.Id);
 
-          return otrsTicketDTOs;
+
+
+            var result = await context.Ticket.AsSplitQuery().Where(tt => tt.TicketStateId == (short)State.Open
+            && !restrictedQueues.Contains(tt.QueueId) &&
+                          context.DynamicFieldValue.AsSplitQuery()
+                          .Where(dfv => type.Equals("All") ? dfv.ValueText.Equals("NationalKey") || dfv.ValueText.Equals("InternationalKey") : dfv.ValueText.Equals(type))
+                          .Select(dfv => dfv.ObjectId).Contains(tt.Id)
+                          && !ackTicketsIds.Contains(tt.Id)).Where(tt => context.DynamicFieldValue.AsSplitQuery().
+                          Where(dfv => dfv.ValueText.Equals("ClientKey")).Select(dfv => dfv.ObjectId).Contains(tt.Id))
+                          .Include(tt => tt.Article).AsSplitQuery().ToListAsync();
+
+            var dynamicFiledValues = await context.DynamicFieldValue.Include(dfv => dfv.Field).AsSplitQuery()
+                                    .Where(dfv => result.Select(t => t.Id).Contains(dfv.ObjectId) && dfv.Field.Label.Equals("Nat/Int")).ToListAsync();
+
+            var otrsTicketDTOs = result.Where(tt => TicketIsPending(tt.Article)).Select(t =>
+            {
+              return new OtrsTicketDTO()
+              {
+                Id = t.Id,
+                Tn = t.Tn,
+                Title = t.Title,
+                NatInt = dynamicFiledValues.Where(dfv => dfv.ObjectId == t.Id).ToList().FirstOrDefault()?.ValueText,
+                CreateTime = t.Article.
+                Where(a => a.ArticleTypeId == (short)ArticleType.ExternalEmail && a.ArticleSenderTypeId == (short)ArticalSenderType.Customer)
+                .Select(a => a.CreateTime)
+                .OrderByDescending(a => a)
+                .First()
+                .ToUniversalTime()
+              };
+            }).OrderByDescending(x => x.CreateTime);
+
+            await SavePendedTickets(otrsTicketDTOs.Select(t =>
+            {
+              return new PendedTicket()
+              {
+                TicketId = t.Id,
+                Overdue = (int)((((TimeSpan)(DateTime.UtcNow - t.CreateTime)).TotalSeconds) / 60)
+              };
+            }).ToList());
+
+            return otrsTicketDTOs;
+          }
         }
       }
     }
@@ -916,6 +925,59 @@ namespace OtrsReportApp.Services
 
     }
 
+    public async Task<FileStreamResult> DownloadPendedTicketReport(Filters filters)
+    {
+      var pendedTickets = await GetPendedTickets(filters);
+      using (var workbook = new XLWorkbook())
+      {
+        var worksheet = workbook.AddWorksheet("TTReport");
+        var currentRow = 1;
+        worksheet.Cell(currentRow, 1).Value = "TN";
+        worksheet.Cell(currentRow, 2).Value = "Create Time";
+        worksheet.Cell(currentRow, 3).Value = "Client";
+        worksheet.Cell(currentRow, 4).Value = "Problem Side";
+        worksheet.Cell(currentRow, 5).Value = "Zone";
+        worksheet.Cell(currentRow, 6).Value = "Type";
+        worksheet.Cell(currentRow, 7).Value = "Description";
+        worksheet.Cell(currentRow, 8).Value = "Initiator";
+        worksheet.Cell(currentRow, 9).Value = "Direction";
+        worksheet.Cell(currentRow, 10).Value = "National/International";
+        worksheet.Cell(currentRow, 11).Value = "Category";
+        worksheet.Cell(currentRow, 12).Value = "Priority";
+        worksheet.Cell(currentRow, 13).Value = "State";
+        worksheet.Cell(currentRow, 14).Value = "Close Time";
+        worksheet.Cell(currentRow, 15).Value = "Comment";
+
+
+        foreach (var item in pendedTickets)
+        {
+          currentRow++;
+          worksheet.Cell(currentRow, 1).DataType = XLDataType.Number;
+          worksheet.Cell(currentRow, 1).Value = item.Tn;
+          worksheet.Cell(currentRow, 2).Value = item.CreateTime;
+          worksheet.Cell(currentRow, 3).Value = item.Client;
+          worksheet.Cell(currentRow, 4).Value = item.ProblemSide;
+          worksheet.Cell(currentRow, 5).Value = item.Zone;
+          worksheet.Cell(currentRow, 6).Value = item.Type;
+          worksheet.Cell(currentRow, 7).Value = item.Description;
+          worksheet.Cell(currentRow, 8).Value = item.Initiator;
+          worksheet.Cell(currentRow, 9).Value = item.Direction;
+          worksheet.Cell(currentRow, 10).Value = item.NatInt;
+          worksheet.Cell(currentRow, 11).Value = item.Category;
+          worksheet.Cell(currentRow, 12).Value = item.TicketPriority;
+          worksheet.Cell(currentRow, 13).Value = item.State;
+          worksheet.Cell(currentRow, 14).Value = item.CloseTime;
+          worksheet.Cell(currentRow, 15).Value = item.Comment?.Comment;
+        }
+
+
+        var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Seek(0, SeekOrigin.Begin);
+        return new FileStreamResult(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      }
+    }
+
     private IEnumerable<SelectItem> ConfigToSelectItems(string config)
     {
       var selectItems = new List<SelectItem>();
@@ -931,5 +993,82 @@ namespace OtrsReportApp.Services
       }
       return selectItems;
     }
+
+    public IEnumerable<QueueDTO> GetQueues()
+    {
+      using(var scope = _scopeFactory.CreateScope())
+      {
+        using(var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+        {
+          using (var ticketContext = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+          {
+            /*var restrictedIds = await ticketContext.PendingTicketRestrictedQueue.Select(s => s.QueueId).ToListAsync();*/
+            return context.Queue.ToList().Select(q => { return new QueueDTO() { Id = q.Id, Name = q.Name }; }).OrderBy(s => s.Name.ToLower());
+          }
+          
+        }
+      }
+    }
+
+    public IEnumerable<QueueDTO> GetPendingTicketRestrictedQueues()
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          var restrictedQueues = context.PendingTicketRestrictedQueue.ToList().Select(s => { return new QueueDTO { Id = s.QueueId, Name = s.Name }; });
+
+          return restrictedQueues;
+        }
+      }
+    }
+
+    public async Task SavePendingTicketRestrictedQueues(List<QueueDTO> queues)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          var restrictedQueueIds = queues.Select(s => s.Id);
+          var restrictedQueuesFromBd = context.PendingTicketRestrictedQueue.ToList().Select(a => a.QueueId);
+          var restrictedQueues = queues
+            .Where(s => !restrictedQueuesFromBd.Contains(s.Id))
+            .Select(q => { return new PendingTicketRestrictedQueue() { QueueId = q.Id, Name = q.Name }; });
+          var selectedQueuesForDelete = context.PendingTicketRestrictedQueue.Where(s => !restrictedQueueIds.Contains(s.QueueId));
+          context.PendingTicketRestrictedQueue.RemoveRange(selectedQueuesForDelete);
+          context.PendingTicketRestrictedQueue.AddRange(restrictedQueues);
+          await context.SaveChangesAsync();
+        }
+      }
+    }
+
+    public async Task AddPendingTicketRestrictedQueues(List<QueueDTO> queues)
+    {
+      using(var scope = _scopeFactory.CreateScope())
+      {
+        using(var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          var restrictedQueues = queues.Select(q => { return new PendingTicketRestrictedQueue() { QueueId = q.Id, Name = q.Name }; });
+          context.PendingTicketRestrictedQueue.AddRange(restrictedQueues);
+          await context.SaveChangesAsync();
+        }
+      }
+    }
+
+    public async Task RemovePendingTicketRestrictedQueues(List<QueueDTO> queues)
+    {
+      using (var scope = _scopeFactory.CreateScope())
+      {
+        using (var context = scope.ServiceProvider.GetRequiredService<TicketDbContext>())
+        {
+          var restrictedQueuesIds = queues.Select(q => q.Id);
+          var restrictedQueues = context.PendingTicketRestrictedQueue.Where(q => restrictedQueuesIds.Contains(q.QueueId));
+          context.PendingTicketRestrictedQueue.RemoveRange(restrictedQueues);
+          await context.SaveChangesAsync();
+        }
+      }
+    }
+
+
   }
 }
